@@ -6,11 +6,11 @@ import { Config } from "./config.js";
 import { Utils } from "./utils.js";
 import { AppState } from "./appState.js";
 import { UIController } from "./uiController.js";
-import { ActionController } from "./actionController.js";
 import { EventBus } from "./eventBus.js";
+import { cityImageData } from "./cityImageData.js";
+import { ActionController } from "./actionController.js";
 
 export const MapController = {
-  // TODO: Replace these with your actual layer IDs from Mapbox Studio
   LAYER_IDS: {
     STATES: "salty-state",
     CALIFORNIA: "California",
@@ -39,7 +39,7 @@ export const MapController = {
       });
 
       map.on("load", () => {
-        AppState.map = map;
+        AppState.dispatch({ type: "SET_MAP_INSTANCE", payload: map });
         this.setupEventHandlers();
         this.setupBusSubscriptions();
         console.log("✅ Map initialized with cloud-hosted data and styles.");
@@ -87,43 +87,39 @@ export const MapController = {
     }
 
     // Click handler for all interactive layers
-    AppState.map.on("click", interactiveLayers, (e) => {
+    AppState.getMap().on("click", interactiveLayers, (e) => {
       if (!e.features || e.features.length === 0) {
         return;
       }
-
-      // Determine the type of feature clicked and handle it
-      const feature = e.features[0]; // Prioritize the topmost feature
-      let entityType;
+      const feature = e.features[0];
+      let entityType, actionName;
 
       switch (feature.layer.id) {
         case this.LAYER_IDS.BEACHES:
           entityType = "beach";
+          actionName = "selectBeachFromMap";
           break;
         case this.LAYER_IDS.REGIONS:
           entityType = "region";
+          actionName = "selectRegion";
           break;
         case this.LAYER_IDS.STATES:
           entityType = "state";
+          actionName = "selectState";
           break;
         default:
-          console.warn(
-            `[MapController] Clicked on an unhandled layer: ${feature.layer.id}`
-          );
           return;
       }
-
-      ActionController.handleEntitySelection({
-        entityType,
-        feature,
-        source: "map-marker",
-      });
+      // Directly execute the specific action
+      if (actionName) {
+        ActionController.execute(actionName, { entityType, feature });
+      }
     });
 
     // Cursor and hover state handlers
-    AppState.map.on("mousemove", interactiveLayers, (e) => {
+    AppState.getMap().on("mousemove", interactiveLayers, (e) => {
       if (e.features.length > 0) {
-        AppState.map.getCanvas().style.cursor = "pointer";
+        AppState.getMap().getCanvas().style.cursor = "pointer";
 
         if (
           this.hoveredFeature &&
@@ -133,37 +129,38 @@ export const MapController = {
         } else {
           // Unset state on the previously hovered feature
           if (this.hoveredFeature) {
-            AppState.map.setFeatureState(this.hoveredFeature, { state: false });
+            AppState.getMap().setFeatureState(this.hoveredFeature, { state: false });
           }
 
           // Set state on the new hovered feature
           this.hoveredFeature = e.features[0];
-          AppState.map.setFeatureState(this.hoveredFeature, { state: true });
+          AppState.getMap().setFeatureState(this.hoveredFeature, { state: true });
         }
       }
     });
 
-    AppState.map.on("mouseleave", interactiveLayers, () => {
+    AppState.getMap().on("mouseleave", interactiveLayers, () => {
       if (this.hoveredFeature) {
-        AppState.map.setFeatureState(this.hoveredFeature, { state: false });
+        AppState.getMap().setFeatureState(this.hoveredFeature, { state: false });
       }
       this.hoveredFeature = null;
-      AppState.map.getCanvas().style.cursor = "";
+      AppState.getMap().getCanvas().style.cursor = "";
     });
 
     // Update sidebar on map move
-    AppState.map.on(
+    AppState.getMap().on(
       "moveend",
-      Utils.debounce(() => {
+      Utils.debounce(async () => {
         console.log("🗺️ Map moveend event");
+        const { ui } = AppState.getState();
         // Only update the list if the list view is actually visible
-        if (AppState.ui.currentSidebar !== "list") {
+        if (ui.currentSidebar !== "list") {
           console.log(
-            `[MapController] Sidebar update skipped, current view is "${AppState.ui.currentSidebar}".`
+            `[MapController] Sidebar update skipped, current view is "${ui.currentSidebar}".`
           );
           return;
         }
-        this.updateSidebarListFromMap();
+        await this.updateSidebarListFromMap();
       }, 250)
     );
   },
@@ -171,11 +168,12 @@ export const MapController = {
   /**
    * Update sidebar list by querying the map for visible features
    */
-  updateSidebarListFromMap() {
-    if (!AppState.map) return;
+  async updateSidebarListFromMap() {
+    const map = AppState.getMap();
+    if (!map) return;
 
     // Query for individual beaches first
-    const beachFeatures = AppState.map.queryRenderedFeatures({
+    const beachFeatures = map.queryRenderedFeatures({
       layers: [this.LAYER_IDS.BEACHES],
     });
     if (beachFeatures.length > 0) {
@@ -187,19 +185,64 @@ export const MapController = {
     }
 
     // If no individual beaches, query for regions
-    const regionFeatures = AppState.map.queryRenderedFeatures({
+    const regionFeatures = map.queryRenderedFeatures({
       layers: [this.LAYER_IDS.REGIONS],
     });
     if (regionFeatures.length > 0) {
-      console.log(
-        `[MapController] Found ${regionFeatures.length} regions in view.`
+      const sourceId = regionFeatures[0].layer.source;
+      const source = map.getSource(sourceId);
+
+      const featuresWithCounts = await Promise.all(
+        regionFeatures.map((region) => {
+          return new Promise((resolve) => {
+            if (!region.properties.cluster) {
+              region.properties.point_count = 1;
+              resolve(region);
+              return;
+            }
+
+            source.getClusterLeaves(
+              region.properties.cluster_id,
+              Infinity,
+              0,
+              (err, leaves) => {
+                if (err) {
+                  console.error("Could not get cluster leaves:", err);
+                  region.properties.point_count =
+                    region.properties.point_count_abbreviated || 1;
+                  resolve(region);
+                  return;
+                }
+                region.properties.point_count = leaves.length;
+                resolve(region);
+              }
+            );
+          });
+        })
       );
-      UIController.renderFeatureList(regionFeatures, "region");
+
+      console.log(
+        `[MapController] Found ${featuresWithCounts.length} regions in view.`
+      );
+      const cityImageMap = new Map(
+        cityImageData.features.map((feature) => [
+          feature.properties.Name,
+          feature.properties.Image,
+        ])
+      );
+
+      featuresWithCounts.forEach((feature) => {
+        const imageName = feature.properties.name;
+        if (cityImageMap.has(imageName)) {
+          feature.properties.Image = cityImageMap.get(imageName);
+        }
+      });
+      UIController.renderFeatureList(featuresWithCounts, "region");
       return;
     }
 
     // If no regions, query for states
-    const stateFeatures = AppState.map.queryRenderedFeatures({
+    const stateFeatures = map.queryRenderedFeatures({
       layers: [this.LAYER_IDS.STATES],
     });
     if (stateFeatures.length > 0) {
@@ -244,24 +287,21 @@ export const MapController = {
     const popup = new mapboxgl.Popup({ offset: Config.UI.POPUP_OFFSET })
       .setLngLat(coordinates)
       .setHTML(popupHTML)
-      .addTo(AppState.map);
+      .addTo(AppState.getMap());
 
     // Track the popup
-    AppState.ui.openPopups.push(popup);
+    AppState.dispatch({ type: "ADD_OPEN_POPUP", payload: popup });
     popup.on("close", () => {
       // Remove popup from the tracking array when it's closed
-      AppState.ui.openPopups = AppState.ui.openPopups.filter(
-        (p) => p !== popup
-      );
+      AppState.dispatch({ type: "REMOVE_OPEN_POPUP", payload: popup });
     });
 
     // Add click listener to the popup to open the detail view
     const popupEl = popup.getElement();
     popupEl.addEventListener("click", () => {
-      ActionController.handleEntitySelection({
+      ActionController.execute('selectBeachFromPopup', {
         entityType: "beach",
-        feature: feature,
-        source: "popup",
+        feature: feature
       });
       popup.remove();
     });
@@ -271,8 +311,8 @@ export const MapController = {
    * Closes all popups currently open on the map.
    */
   closeAllPopups() {
-    AppState.ui.openPopups.forEach((popup) => popup.remove());
-    AppState.ui.openPopups = [];
+    AppState.getOpenPopups().forEach((popup) => popup.remove());
+    AppState.dispatch({ type: "CLEAR_OPEN_POPUPS" });
   },
 
   /**
@@ -287,8 +327,9 @@ export const MapController = {
     zoom = Config.MAP.DETAIL_ZOOM,
     speed = Config.UI.MAP_FLY_SPEED,
   }) {
-    if (AppState.map) {
-      AppState.map.flyTo({
+    const map = AppState.getMap();
+    if (map) {
+      map.flyTo({
         center: coordinates,
         zoom,
         speed: speed,
@@ -303,8 +344,9 @@ export const MapController = {
    * @param {number} [payload.speed=1.2] - Animation speed.
    */
   zoomTo({ zoom, speed = 1.2 }) {
-    if (AppState.map) {
-      AppState.map.easeTo({
+    const map = AppState.getMap();
+    if (map) {
+      map.easeTo({
         zoom,
         speed,
       });

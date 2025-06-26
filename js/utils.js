@@ -101,4 +101,33 @@ export const Utils = {
         element.textContent = finalValue;
     }
   },
+
+  /**
+   * Populates elements in a container with data from an object.
+   * It looks for elements with a `data-bind` attribute and uses the attribute's
+   * value to look up the corresponding key in the data object.
+   * @param {HTMLElement} container - The parent element containing elements to populate.
+   * @param {object} data - The data object.
+   */
+  renderView(container, data) {
+    if (!container || !data) return;
+
+    container.querySelectorAll("[data-bind]").forEach((element) => {
+      const key = element.dataset.bind;
+      const value = data[key];
+
+      if (value !== undefined && value !== null) {
+        if (element.tagName === "A") {
+          element.href = value;
+        } else if (element.tagName === "IMG") {
+          element.src = value;
+        } else {
+          element.textContent = value;
+        }
+      } else {
+        // Optional: Hide element or set to default if data is missing
+        element.textContent = ""; // Or some placeholder
+      }
+    });
+  },
 };

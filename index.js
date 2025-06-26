@@ -10,46 +10,41 @@ import { MockAPI } from "./js/mockAPI.js";
 import { AppState } from "./js/appState.js";
 import { MapController } from "./js/mapController.js";
 import { UIController } from "./js/uiController.js";
+import { EventBus } from "./js/eventBus.js";
 import { ActionController } from "./js/actionController.js";
+
+// =============================================================================
+// MAIN APPLICATION OBJECT
+// =============================================================================
+
+const App = {
+  async init() {
+    console.log("🚀 Salty Map Application Starting...");
+    try {
+      // Pass App context to controllers
+      UIController.init();
+      await MapController.init();
+      console.log("✅ Application initialized successfully!");
+    } catch (error) {
+      console.error("❌ Failed to initialize application:", error);
+      const mapContainer = document.querySelector(
+        Config.SELECTORS.MAP_CONTAINER
+      );
+      if (mapContainer) {
+        Utils.showError(
+          mapContainer,
+          "Sorry, we couldn't load the map. Please refresh the page to try again."
+        );
+      }
+    }
+  },
+};
 
 // =============================================================================
 // APPLICATION INITIALIZATION
 // =============================================================================
 
-document.addEventListener("DOMContentLoaded", async function () {
-  console.log("🚀 Salty Map Application v2.0.0 Starting...");
-
-  try {
-    // Initialize modules in sequence
-    console.log("📱 Initializing UI Controller...");
-    UIController.init();
-
-    console.log("🗺️ Initializing Map Controller...");
-    await MapController.init();
-
-    console.log("✅ Application initialized successfully!");
-    console.log("📊 Application modules loaded:", {
-      Config: !!Config,
-      Utils: !!Utils,
-      MockAPI: !!MockAPI,
-      AppState: !!AppState,
-      MapController: !!MapController,
-      UIController: !!UIController,
-      ActionController: !!ActionController,
-    });
-  } catch (error) {
-    console.error("❌ Failed to initialize application:", error);
-
-    // Show user-friendly error message
-    const mapContainer = document.querySelector(Config.SELECTORS.MAP_CONTAINER);
-    if (mapContainer) {
-      Utils.showError(
-        mapContainer,
-        "Sorry, we couldn't load the map. Please refresh the page to try again."
-      );
-    }
-  }
-});
+document.addEventListener("DOMContentLoaded", () => App.init());
 
 // =============================================================================
 // GLOBAL ERROR HANDLING
@@ -71,13 +66,13 @@ window.addEventListener("unhandledrejection", function (e) {
 
 // Export modules for potential testing or external access
 export {
+  App,
   Config,
   Utils,
   MockAPI,
   AppState,
   MapController,
   UIController,
-  ActionController,
 };
 
 console.log("📋 Salty Map Application Loaded");

@@ -1,74 +1,52 @@
-// =============================================================================
-// ACTION CONTROLLER MODULE
-// =============================================================================
-
 import { Config } from "./config.js";
 import { AppState } from "./appState.js";
-import { Utils } from "./utils.js";
 import { EventBus } from "./eventBus.js";
-import { UIController } from "./uiController.js";
+import { Utils } from "./utils.js";
 
-export const ActionController = {
+const ActionController = {
   /**
-   * Executes a named action sequence from the configuration.
-   * @param {string} actionName - The key from Config.EVENT_ACTIONS (e.g., 'selectBeach').
-   * @param {object} context - An object containing relevant data, like the clicked 'feature'.
+   * Executes a named action sequence.
+   * @param {string} actionName - The key from Config.EVENT_ACTIONS.
+   * @param {object} context - Contextual data (e.g., feature, target).
    */
   execute(actionName, context = {}) {
     const actionConfig = Config.EVENT_ACTIONS[actionName];
     if (!actionConfig) {
-      console.warn(
-        `[ActionController] No action configured for '${actionName}'.`
-      );
+      console.warn(`[ActionController] No action configured for '${actionName}'.`);
       return;
     }
 
-    let actions;
-    // New logic to handle contextual actions
-    if (actionConfig.bySource && context.source) {
-      const sourceActions = actionConfig.bySource[context.source];
-      if (sourceActions) {
-        actions = Utils.isMobileView()
-          ? sourceActions.mobile || sourceActions.default
-          : sourceActions.default;
-      }
-    }
-
-    // Fallback to the original structure
-    if (!actions) {
-      actions = actionConfig.actions;
-    }
-
-    if (!actions || actions.length === 0) {
-      console.warn(
-        `[ActionController] No executable actions found for '${actionName}' with context:`,
-        context
-      );
-      return;
-    }
-
-    console.log(
-      `[ActionController] Executing action: '${actionName}'`,
-      context
-    );
-
-    // If context doesn't have feature, get it from the dataset.
-    // This is the single point where we resolve the clicked item to its data.
     if (!context.feature && context.target) {
       const { entityType, featureId } = context.target.dataset;
       if (entityType && featureId) {
-        context.feature = AppState.cache.visibleFeatures.get(featureId);
+        context.feature = AppState.getState().cache.visibleFeatures.get(featureId);
         context.entityType = entityType;
       }
     }
 
-    actions.forEach((action) => {
+    console.log(`[ActionController] Executing action: '${actionName}'`, context);
+
+    actionConfig.actions.forEach((action) => {
+      if (action.when) {
+        const conditionKey = Object.keys(action.when)[0];
+        const expectedValue = action.when[conditionKey];
+        let conditionMet = false;
+
+        if (conditionKey === "context") {
+          if (expectedValue === "isMobile") conditionMet = Utils.isMobileView();
+          if (expectedValue === "isDesktop")
+            conditionMet = !Utils.isMobileView();
+        }
+
+        if (!conditionMet) return;
+      }
+
       this.runAction(action, context);
     });
   },
 
   /**
-   * Runs a single action from a sequence.
+   * Runs a single action.
    * @param {object} action - The action object from the config.
    * @param {object} context - The context for this execution.
    */
@@ -97,12 +75,15 @@ export const ActionController = {
       case "UPDATE_APP_STATE":
         if (feature && entityType) {
           const entityId = Utils.getFeatureEntityId(feature);
-          AppState.setSelection(entityType, entityId, feature);
+          AppState.dispatch({
+            type: "SET_SELECTION",
+            payload: { type: entityType, id: entityId, feature },
+          });
         }
         break;
 
       case "SHOW_SIDEBAR":
-        UIController.showSidebar(action.sidebar);
+        EventBus.publish("ui:sidebarRequested", { sidebar: action.sidebar });
         break;
 
       case "SHOW_POPUP":
@@ -123,37 +104,13 @@ export const ActionController = {
         break;
 
       case "TOGGLE_FULLSCREEN":
-        UIController.toggleFullscreen();
+        EventBus.publish("ui:fullscreenToggled");
         break;
 
       default:
-        console.warn(
-          `[ActionController] Unknown action type: '${action.type}'`
-        );
+        console.warn(`[ActionController] Unknown action type: '${action.type}'`);
     }
-  },
-
-  /**
-   * Handles the selection of any entity by dispatching to the ActionController.
-   * @param {object} options
-   * @param {string} options.entityType - 'state', 'region', 'beach'.
-   * @param {object} options.feature - The GeoJSON feature object.
-   * @param {string} [options.source] - The source of the selection ('map-marker', 'sidebar-list-item').
-   */
-  handleEntitySelection({ entityType, feature, source }) {
-    if (!feature || !feature.geometry) {
-      console.error("[ActionController] Invalid feature provided.", feature);
-      return;
-    }
-
-    // Convert entityType to a capitalized string for the action name (e.g., 'state' -> 'selectState')
-    const actionName = `select${
-      entityType.charAt(0).toUpperCase() + entityType.slice(1)
-    }`;
-
-    // The context object passes all necessary data to the ActionController
-    const context = { feature, entityType, source };
-
-    this.execute(actionName, context);
   },
 };
+
+export { ActionController }; 
