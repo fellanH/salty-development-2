@@ -17,7 +17,7 @@ import { ActionController } from "./js/actionController.js";
 // =============================================================================
 
 document.addEventListener("DOMContentLoaded", async function () {
-  console.log("🚀 Salty Map Application Starting...");
+  console.log("🚀 Salty Map Application v2.0.0 Starting...");
 
   try {
     // Initialize modules in sequence
