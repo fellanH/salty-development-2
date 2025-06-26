@@ -27,6 +27,8 @@ export const AppState = {
     currentSidebar: "home", // 'home', 'list', 'detail'
     isMobile: false,
     isLoading: false,
+    elements: {}, // To be populated by the UIController
+    openPopups: [], // To track active popups
   },
 
   /**

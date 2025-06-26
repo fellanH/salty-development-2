@@ -6,7 +6,7 @@ import { Config } from "./config.js";
 import { Utils } from "./utils.js";
 import { AppState } from "./appState.js";
 import { UIController } from "./uiController.js";
-import { NavigationController } from "./navigationController.js";
+import { ActionController } from "./actionController.js";
 import { EventBus } from "./eventBus.js";
 
 export const MapController = {
@@ -69,6 +69,8 @@ export const MapController = {
         setTimeout(() => this.showPopup(data.feature), data.delay || 0);
       }
     });
+    EventBus.subscribe("map:closeAllPopups", this.closeAllPopups.bind(this));
+    EventBus.subscribe("map:zoomTo", this.zoomTo.bind(this));
   },
 
   /**
@@ -111,7 +113,11 @@ export const MapController = {
           return;
       }
 
-      NavigationController.handleEntitySelection({ entityType, feature });
+      ActionController.handleEntitySelection({
+        entityType,
+        feature,
+        source: "map-marker",
+      });
     });
 
     // Cursor and hover state handlers
@@ -218,7 +224,7 @@ export const MapController = {
     const properties = feature.properties;
 
     const popupHTML = `
-      <div class="popup_component">
+      <div class="popup_component" style="cursor: pointer;">
         <img src="${
           properties["Main Image"] ||
           "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300"
@@ -235,10 +241,38 @@ export const MapController = {
       </div>
     `;
 
-    new mapboxgl.Popup({ offset: Config.UI.POPUP_OFFSET })
+    const popup = new mapboxgl.Popup({ offset: Config.UI.POPUP_OFFSET })
       .setLngLat(coordinates)
       .setHTML(popupHTML)
       .addTo(AppState.map);
+
+    // Track the popup
+    AppState.ui.openPopups.push(popup);
+    popup.on("close", () => {
+      // Remove popup from the tracking array when it's closed
+      AppState.ui.openPopups = AppState.ui.openPopups.filter(
+        (p) => p !== popup
+      );
+    });
+
+    // Add click listener to the popup to open the detail view
+    const popupEl = popup.getElement();
+    popupEl.addEventListener("click", () => {
+      ActionController.handleEntitySelection({
+        entityType: "beach",
+        feature: feature,
+        source: "popup",
+      });
+      popup.remove();
+    });
+  },
+
+  /**
+   * Closes all popups currently open on the map.
+   */
+  closeAllPopups() {
+    AppState.ui.openPopups.forEach((popup) => popup.remove());
+    AppState.ui.openPopups = [];
   },
 
   /**
@@ -258,6 +292,21 @@ export const MapController = {
         center: coordinates,
         zoom,
         speed: speed,
+      });
+    }
+  },
+
+  /**
+   * Zooms to a specific zoom level without changing the center.
+   * @param {object} payload - The zoomTo payload.
+   * @param {number} payload.zoom - Target zoom level.
+   * @param {number} [payload.speed=1.2] - Animation speed.
+   */
+  zoomTo({ zoom, speed = 1.2 }) {
+    if (AppState.map) {
+      AppState.map.easeTo({
+        zoom,
+        speed,
       });
     }
   },

@@ -6,6 +6,7 @@ import { Config } from "./config.js";
 import { AppState } from "./appState.js";
 import { Utils } from "./utils.js";
 import { EventBus } from "./eventBus.js";
+import { UIController } from "./uiController.js";
 
 export const ActionController = {
   /**
@@ -15,10 +16,33 @@ export const ActionController = {
    */
   execute(actionName, context = {}) {
     const actionConfig = Config.EVENT_ACTIONS[actionName];
-
-    if (!actionConfig || !actionConfig.actions) {
+    if (!actionConfig) {
       console.warn(
         `[ActionController] No action configured for '${actionName}'.`
+      );
+      return;
+    }
+
+    let actions;
+    // New logic to handle contextual actions
+    if (actionConfig.bySource && context.source) {
+      const sourceActions = actionConfig.bySource[context.source];
+      if (sourceActions) {
+        actions = Utils.isMobileView()
+          ? sourceActions.mobile || sourceActions.default
+          : sourceActions.default;
+      }
+    }
+
+    // Fallback to the original structure
+    if (!actions) {
+      actions = actionConfig.actions;
+    }
+
+    if (!actions || actions.length === 0) {
+      console.warn(
+        `[ActionController] No executable actions found for '${actionName}' with context:`,
+        context
       );
       return;
     }
@@ -38,7 +62,7 @@ export const ActionController = {
       }
     }
 
-    actionConfig.actions.forEach((action) => {
+    actions.forEach((action) => {
       this.runAction(action, context);
     });
   },
@@ -78,7 +102,7 @@ export const ActionController = {
         break;
 
       case "SHOW_SIDEBAR":
-        EventBus.publish("ui:showSidebar", { sidebar: action.sidebar });
+        UIController.showSidebar(action.sidebar);
         break;
 
       case "SHOW_POPUP":
@@ -87,8 +111,19 @@ export const ActionController = {
         }
         break;
 
+      case "CLOSE_ALL_POPUPS":
+        EventBus.publish("map:closeAllPopups");
+        break;
+
+      case "ZOOM_TO":
+        EventBus.publish("map:zoomTo", {
+          zoom: action.zoomLevel,
+          speed: action.speed,
+        });
+        break;
+
       case "TOGGLE_FULLSCREEN":
-        EventBus.publish("ui:toggleFullscreen");
+        UIController.toggleFullscreen();
         break;
 
       default:
@@ -96,5 +131,29 @@ export const ActionController = {
           `[ActionController] Unknown action type: '${action.type}'`
         );
     }
+  },
+
+  /**
+   * Handles the selection of any entity by dispatching to the ActionController.
+   * @param {object} options
+   * @param {string} options.entityType - 'state', 'region', 'beach'.
+   * @param {object} options.feature - The GeoJSON feature object.
+   * @param {string} [options.source] - The source of the selection ('map-marker', 'sidebar-list-item').
+   */
+  handleEntitySelection({ entityType, feature, source }) {
+    if (!feature || !feature.geometry) {
+      console.error("[ActionController] Invalid feature provided.", feature);
+      return;
+    }
+
+    // Convert entityType to a capitalized string for the action name (e.g., 'state' -> 'selectState')
+    const actionName = `select${
+      entityType.charAt(0).toUpperCase() + entityType.slice(1)
+    }`;
+
+    // The context object passes all necessary data to the ActionController
+    const context = { feature, entityType, source };
+
+    this.execute(actionName, context);
   },
 };

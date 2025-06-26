@@ -10,7 +10,7 @@ export const Config = {
     STYLE: "mapbox://styles/felixhellstrom/cmc0qhn8p00gs01s921jm5bkv",
     DEFAULT_ZOOM: 2,
     DESKTOP_START_POSITION: [-123.046253, 33.837038],
-    MOBILE_START_POSITION: [-118.3628729, 33.900661],
+    MOBILE_START_POSITION: [-140.3628729, 33.900661],
     START_PITCH: 0,
     DETAIL_ZOOM: 15,
     MOBILE_BREAKPOINT: 768,
@@ -36,13 +36,44 @@ export const Config = {
       ],
     },
     selectBeach: {
-      description: "Action when a single beach is clicked.",
-      actions: [
-        { type: "FLY_TO", zoomLevel: 14, speed: 1.5 },
-        { type: "UPDATE_APP_STATE" },
-        { type: "SHOW_SIDEBAR", sidebar: "detail" },
-        { type: "SHOW_POPUP", delay: 100 },
-      ],
+      description:
+        "Actions for selecting a beach, contextual to source and device.",
+      bySource: {
+        "map-marker": {
+          default: [
+            { type: "UPDATE_APP_STATE" },
+            { type: "SHOW_POPUP", delay: 100 },
+          ],
+          mobile: [
+            { type: "UPDATE_APP_STATE" },
+            { type: "SHOW_SIDEBAR", sidebar: "detail" },
+            { type: "SHOW_POPUP", delay: 100 },
+          ],
+        },
+        "sidebar-list-item": {
+          default: [
+            { type: "UPDATE_APP_STATE" },
+            { type: "FLY_TO", zoomLevel: 15, speed: 1.2 },
+            { type: "SHOW_SIDEBAR", sidebar: "detail" },
+          ],
+          mobile: [
+            { type: "UPDATE_APP_STATE" },
+            { type: "SHOW_SIDEBAR", sidebar: "detail" },
+            { type: "SHOW_POPUP", delay: 100 },
+          ],
+        },
+        popup: {
+          default: [
+            { type: "UPDATE_APP_STATE" },
+            { type: "SHOW_SIDEBAR", sidebar: "detail" },
+          ],
+          mobile: [
+            { type: "UPDATE_APP_STATE" },
+            { type: "FLY_TO", zoomLevel: 14, speed: 1.2 },
+            { type: "SHOW_SIDEBAR", sidebar: "detail" },
+          ],
+        },
+      },
     },
 
     // Defines actions for static UI buttons
@@ -63,8 +94,13 @@ export const Config = {
       ],
     },
     backToList: {
-      description: "Action for the back button in the detail view.",
-      actions: [{ type: "SHOW_SIDEBAR", sidebar: "list" }],
+      description:
+        "Action for the back button in detail view to return to the list, close popups, and zoom out.",
+      actions: [
+        { type: "SHOW_SIDEBAR", sidebar: "list" },
+        { type: "CLOSE_ALL_POPUPS" },
+        { type: "ZOOM_TO", zoomLevel: 9, speed: 1.4 },
+      ],
     },
     toggleFullscreen: {
       description: "Action for the fullscreen toggle button.",
@@ -145,13 +181,6 @@ export const Config = {
     // Navigation Buttons
     BEACH_DETAIL_BACK_BUTTON: ".modal_back-button",
     BEACH_DETAIL_CLOSE_BUTTON: ".modal_close-button",
-
-    // Navigation Buttons - Recommend changing to semantic selectors
-    //NAV_HOME_BUTTON: '[data-element="nav-home"]', // Update in HTML: data-element="nav-home"
-    //NAV_LIST_BUTTON: '[data-element="nav-list"]', // Update in HTML: data-element="nav-list"
-    //HOME_SIDEBAR_LIST_BUTTON: '[data-element="home-list"]', // Update in HTML: data-element="home-list"
-    //FULLSCREEN_BUTTON: '[data-element="fullscreen"]', // Update in HTML: data-element="fullscreen"
-    //BEACH_NAV_BUTTON: '[data-element="beach-nav"]' // Update in HTML: data-element="beach-nav"
   },
 
   // Animation and UI Settings
@@ -162,10 +191,11 @@ export const Config = {
     LIST_ITEM_HEIGHT: 80,
   },
 
-  // Generic List Item Template Configuration
-  LIST_ITEM_TEMPLATES: {
+  // Configuration for different feature types
+  FEATURE_CONFIG: {
     state: {
       templateId: "#state-list-item-template",
+      actionName: "selectState",
       dataMapping: {
         '[state-list-item="image"]': {
           type: "image",
@@ -186,6 +216,7 @@ export const Config = {
     },
     region: {
       templateId: "#city-list-item-template",
+      actionName: "selectRegion",
       dataMapping: {
         '[city-list-item="title"]': {
           type: "text",
@@ -200,6 +231,7 @@ export const Config = {
     },
     beach: {
       templateId: "#beach-list-item-template",
+      actionName: "selectBeach",
       dataMapping: {
         '[beach-list-item="image"]': {
           type: "image",

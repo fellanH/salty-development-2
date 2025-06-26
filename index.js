@@ -10,7 +10,6 @@ import { MockAPI } from "./js/mockAPI.js";
 import { AppState } from "./js/appState.js";
 import { MapController } from "./js/mapController.js";
 import { UIController } from "./js/uiController.js";
-import { NavigationController } from "./js/navigationController.js";
 import { ActionController } from "./js/actionController.js";
 
 // =============================================================================
@@ -36,7 +35,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       AppState: !!AppState,
       MapController: !!MapController,
       UIController: !!UIController,
-      NavigationController: !!NavigationController,
       ActionController: !!ActionController,
     });
   } catch (error) {
@@ -79,7 +77,6 @@ export {
   AppState,
   MapController,
   UIController,
-  NavigationController,
   ActionController,
 };
 

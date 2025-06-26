@@ -7,14 +7,10 @@ import { Utils } from "./utils.js";
 import { MockAPI } from "./mockAPI.js";
 import { AppState } from "./appState.js";
 import { MapController } from "./mapController.js";
-import { NavigationController } from "./navigationController.js";
 import { ActionController } from "./actionController.js";
 import { EventBus } from "./eventBus.js";
 
 export const UIController = {
-  // Cache DOM elements
-  elements: {},
-
   /**
    * Initialize UI controller and cache DOM elements
    */
@@ -44,7 +40,7 @@ export const UIController = {
     Object.entries(Config.SELECTORS).forEach(([key, selector]) => {
       const element = document.querySelector(selector);
       if (element) {
-        this.elements[key] = element;
+        AppState.ui.elements[key] = element;
         console.log(`[UIController] Cached element: ${key} (${selector})`);
       } else {
         console.warn(`[UIController] Element not found: ${selector}`);
@@ -58,33 +54,27 @@ export const UIController = {
   setupEventListeners() {
     console.log("[UIController] setupEventListeners");
 
-    // Use a generic handler for all elements with a data-action attribute
+    // Use a generic handler for all elements with an action-trigger attribute
     document.body.addEventListener("click", (e) => {
-      const target = e.target.closest("[data-action]");
+      const target = e.target.closest("[action-trigger]");
       if (!target) return;
 
       e.preventDefault();
-      const actionName = target.dataset.action;
+      const actionName = target.getAttribute("action-trigger");
       if (actionName) {
         console.log(`[UIController] Action triggered: ${actionName}`);
-        ActionController.execute(actionName, { target });
+        ActionController.execute(actionName, {
+          target,
+          source: "sidebar-list-item", // Assume all UI-driven actions originate from the sidebar
+        });
       }
     });
-
-    // You will now need to add `data-action` attributes to your HTML elements, for example:
-    // <button data-action="navigateHome">Home</button>
-    // <button data-action="backToList" class="modal_back-button">Back</button>
-    // <button data-action="closeDetailAndReset" class="modal_close-button">Close</button>
   },
 
   /**
    * Setup subscriptions to the event bus.
    */
   setupBusSubscriptions() {
-    EventBus.subscribe("ui:showSidebar", (data) =>
-      this.showSidebar(data.sidebar)
-    );
-    EventBus.subscribe("ui:toggleFullscreen", this.toggleFullscreen.bind(this));
     EventBus.subscribe(
       "state:selectionChanged",
       this.handleSelectionChange.bind(this)
@@ -96,12 +86,13 @@ export const UIController = {
    * @param {object} selection - The new selection state.
    */
   handleSelectionChange(selection) {
-    // Only update and show the detail sidebar if a 'beach' is selected.
-    if (selection && selection.type === "beach") {
-      this.updateDetailSidebar();
-    } else if (AppState.ui.currentSidebar === "detail") {
-      // If any other type is selected (state, region) or the selection is cleared,
-      // and if the detail sidebar is currently visible, hide it.
+    // This function is now only responsible for hiding the detail sidebar if the
+    // selection is cleared or changed to a non-beach entity.
+    // The showing of the sidebar is handled by the SHOW_SIDEBAR action.
+    if (
+      (!selection || selection.type !== "beach") &&
+      AppState.ui.currentSidebar === "detail"
+    ) {
       this.hideDetailSidebar();
     }
   },
@@ -117,9 +108,9 @@ export const UIController = {
     const config = { attributes: true, attributeFilter: ["style"] };
 
     const sidebarsToObserve = [
-      this.elements.SIDEBAR_HOME,
-      this.elements.SIDEBAR_BEACH_LIST,
-      this.elements.SIDEBAR_BEACH,
+      AppState.ui.elements.SIDEBAR_HOME,
+      AppState.ui.elements.SIDEBAR_BEACH_LIST,
+      AppState.ui.elements.SIDEBAR_BEACH,
     ];
 
     sidebarsToObserve.forEach((sidebar) => {
@@ -137,18 +128,18 @@ export const UIController = {
 
     // Determine which sidebar is currently displayed
     if (
-      this.elements.SIDEBAR_BEACH &&
-      this.elements.SIDEBAR_BEACH.style.display === "block"
+      AppState.ui.elements.SIDEBAR_BEACH &&
+      AppState.ui.elements.SIDEBAR_BEACH.style.display === "block"
     ) {
       newSidebar = "detail";
     } else if (
-      this.elements.SIDEBAR_BEACH_LIST &&
-      this.elements.SIDEBAR_BEACH_LIST.style.display === "block"
+      AppState.ui.elements.SIDEBAR_BEACH_LIST &&
+      AppState.ui.elements.SIDEBAR_BEACH_LIST.style.display === "block"
     ) {
       newSidebar = "list";
     } else if (
-      this.elements.SIDEBAR_HOME &&
-      this.elements.SIDEBAR_HOME.style.display === "block"
+      AppState.ui.elements.SIDEBAR_HOME &&
+      AppState.ui.elements.SIDEBAR_HOME.style.display === "block"
     ) {
       newSidebar = "home";
     }
@@ -173,14 +164,13 @@ export const UIController = {
   updateResponsiveLayout() {
     console.log("[UIController] updateResponsiveLayout");
     const isMobile = Utils.isMobileView();
+    const wasMobile = AppState.ui.isMobile; // Get previous state
     AppState.updateUI({ isMobile });
 
-    if (isMobile) {
-      this.showSidebar("home");
-      this.hideMap();
-    } else {
-      this.showSidebar("home");
-      this.showMap();
+    // Only adjust layout when switching between mobile and desktop modes.
+    // This prevents resetting the view on simple resizes (e.g., mobile orientation change).
+    if (isMobile !== wasMobile) {
+      this.showSidebar(AppState.ui.currentSidebar || "home");
     }
   },
 
@@ -193,32 +183,34 @@ export const UIController = {
     AppState.updateUI({ currentSidebar: type });
 
     // Hide all sidebar panels
-    if (this.elements.SIDEBAR_HOME)
-      this.elements.SIDEBAR_HOME.style.display = "none";
-    if (this.elements.SIDEBAR_BEACH_LIST)
-      this.elements.SIDEBAR_BEACH_LIST.style.display = "none";
-    if (this.elements.SIDEBAR_BEACH)
-      this.elements.SIDEBAR_BEACH.style.display = "none";
+    if (AppState.ui.elements.SIDEBAR_HOME)
+      AppState.ui.elements.SIDEBAR_HOME.style.display = "none";
+    if (AppState.ui.elements.SIDEBAR_BEACH_LIST)
+      AppState.ui.elements.SIDEBAR_BEACH_LIST.style.display = "none";
+    if (AppState.ui.elements.SIDEBAR_BEACH)
+      AppState.ui.elements.SIDEBAR_BEACH.style.display = "none";
 
     // Show requested panel
     switch (type) {
       case "home":
-        if (this.elements.SIDEBAR_HOME)
-          this.elements.SIDEBAR_HOME.style.display = "block";
+        if (AppState.ui.elements.SIDEBAR_HOME)
+          AppState.ui.elements.SIDEBAR_HOME.style.display = "block";
         break;
       case "list":
-        if (this.elements.SIDEBAR_BEACH_LIST)
-          this.elements.SIDEBAR_BEACH_LIST.style.display = "block";
+        if (AppState.ui.elements.SIDEBAR_BEACH_LIST)
+          AppState.ui.elements.SIDEBAR_BEACH_LIST.style.display = "block";
         break;
       case "detail":
-        if (this.elements.SIDEBAR_BEACH)
-          this.elements.SIDEBAR_BEACH.style.display = "block";
+        if (AppState.ui.elements.SIDEBAR_BEACH) {
+          AppState.ui.elements.SIDEBAR_BEACH.style.display = "block";
+          this.updateDetailSidebar(); // Update content when shown
+        }
         break;
     }
 
     // Show sidebar wrapper
-    if (this.elements.SIDEBAR_WRAPPER) {
-      this.elements.SIDEBAR_WRAPPER.style.display = "block";
+    if (AppState.ui.elements.SIDEBAR_WRAPPER) {
+      AppState.ui.elements.SIDEBAR_WRAPPER.style.display = "block";
     }
 
     // Handle map visibility on mobile
@@ -234,8 +226,8 @@ export const UIController = {
    */
   showMap() {
     console.log("[UIController] showMap");
-    if (this.elements.SIDEBAR_MAP) {
-      this.elements.SIDEBAR_MAP.style.display = "block";
+    if (AppState.ui.elements.SIDEBAR_MAP) {
+      AppState.ui.elements.SIDEBAR_MAP.style.display = "block";
     }
   },
 
@@ -244,8 +236,8 @@ export const UIController = {
    */
   hideMap() {
     console.log("[UIController] hideMap");
-    if (this.elements.SIDEBAR_MAP) {
-      this.elements.SIDEBAR_MAP.style.display = "none";
+    if (AppState.ui.elements.SIDEBAR_MAP) {
+      AppState.ui.elements.SIDEBAR_MAP.style.display = "none";
     }
   },
 
@@ -257,23 +249,23 @@ export const UIController = {
     if (Utils.isMobileView()) {
       // On mobile, toggle between map and sidebar
       if (
-        this.elements.SIDEBAR_MAP &&
-        this.elements.SIDEBAR_MAP.style.display === "none"
+        AppState.ui.elements.SIDEBAR_MAP &&
+        AppState.ui.elements.SIDEBAR_MAP.style.display === "none"
       ) {
         this.hideMap();
         this.showSidebar(AppState.ui.currentSidebar);
       } else {
         this.showMap();
-        if (this.elements.SIDEBAR_WRAPPER) {
-          this.elements.SIDEBAR_WRAPPER.style.display = "none";
+        if (AppState.ui.elements.SIDEBAR_WRAPPER) {
+          AppState.ui.elements.SIDEBAR_WRAPPER.style.display = "none";
         }
       }
     } else {
       // On desktop, toggle sidebar visibility
-      if (this.elements.SIDEBAR_WRAPPER) {
+      if (AppState.ui.elements.SIDEBAR_WRAPPER) {
         const isVisible =
-          this.elements.SIDEBAR_WRAPPER.style.display !== "none";
-        this.elements.SIDEBAR_WRAPPER.style.display = isVisible
+          AppState.ui.elements.SIDEBAR_WRAPPER.style.display !== "none";
+        AppState.ui.elements.SIDEBAR_WRAPPER.style.display = isVisible
           ? "none"
           : "block";
       }
@@ -288,7 +280,7 @@ export const UIController = {
    */
   renderFeatureList(features = [], type = "beach") {
     console.log(`[UIController] renderFeatureList for type: ${type}`, features);
-    const listContainer = this.elements.BEACH_LIST_CONTAINER;
+    const listContainer = AppState.ui.elements.BEACH_LIST_CONTAINER;
 
     if (!listContainer) {
       console.error(
@@ -346,7 +338,7 @@ export const UIController = {
    * @returns {HTMLElement} List item element
    */
   createListItem(feature, type) {
-    const config = Config.LIST_ITEM_TEMPLATES[type];
+    const config = Config.FEATURE_CONFIG[type];
     if (!config) {
       console.error(`No template configuration found for type: ${type}`);
       return document.createElement("div"); // Return empty element on error
@@ -366,20 +358,7 @@ export const UIController = {
     const entityId = Utils.getFeatureEntityId(feature);
     listItem.dataset.entityType = type;
     listItem.dataset.featureId = entityId;
-
-    let actionName = "";
-    switch (type) {
-      case "state":
-        actionName = "selectState";
-        break;
-      case "region":
-        actionName = "selectRegion";
-        break;
-      case "beach":
-        actionName = "selectBeach";
-        break;
-    }
-    listItem.dataset.action = actionName;
+    listItem.setAttribute("action-trigger", config.actionName);
 
     // Apply data mapping from the config
     for (const selector in config.dataMapping) {
@@ -419,13 +398,10 @@ export const UIController = {
     );
     const { id, type, feature } = AppState.currentSelection;
 
-    if (!id || !feature || !this.elements.SIDEBAR_BEACH) {
+    if (!id || !feature || !AppState.ui.elements.SIDEBAR_BEACH) {
       this.showSidebar("list"); // or 'home'
       return;
     }
-
-    // Show the detail sidebar
-    this.showSidebar("detail");
 
     // Temporarily use feature properties for details
     const details = feature.properties;
@@ -481,7 +457,7 @@ export const UIController = {
     console.log("[UIController] renderDetailContent", { details, weather });
 
     const { updateElement } = Utils;
-    const el = this.elements;
+    const el = AppState.ui.elements;
 
     const getProperty = (obj, keys, defaultVal = "") => {
       for (const key of keys) {
