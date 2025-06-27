@@ -1,6 +1,6 @@
-# Salty Development 2
+# Salty Beaches
 
-Salty Development 2 is a modern, interactive web application designed to display geographical data with a focus on beaches. It is built to integrate seamlessly with a Webflow CMS backend, providing a powerful and flexible solution for dynamic, map-based content. The application features a responsive design, a modular architecture, and a highly configurable event-driven system for user interactions.
+Salty Beaches is a modern, interactive web application designed to display geographical data with a focus on beaches. It is built to integrate seamlessly with a Webflow CMS backend, providing a powerful and flexible solution for dynamic, map-based content. The application features a responsive design, a modular architecture, and a highly configurable event-driven system for user interactions.
 
 ## Table of Contents
 
