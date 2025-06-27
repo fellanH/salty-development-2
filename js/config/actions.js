@@ -19,6 +19,7 @@ export const eventActionsConfig = {
     description: "Action when a beach is selected directly from the map.",
     actions: [
       { type: "UPDATE_APP_STATE" },
+      { type: "FLY_TO", zoomLevel: 14.5, speed: 2 },
       { type: "SHOW_POPUP", delay: 100 },
       { type: "SHOW_SIDEBAR", sidebar: "detail", when: { context: "isMobile" } },
     ],

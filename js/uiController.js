@@ -70,10 +70,11 @@ export const UIController = {
    * Setup subscriptions to the event bus.
    */
   setupBusSubscriptions() {
-    EventBus.subscribe(
-      "state:selectionChanged",
-      this.handleSelectionChange.bind(this)
-    );
+    EventBus.subscribe("state:selectionChanged", (selection) => {
+      if (selection?.type === "beach") {
+        DetailView.updateDetailSidebar();
+      }
+    });
     EventBus.subscribe("ui:sidebarRequested", (data) => this.showSidebar(data.sidebar));
     EventBus.subscribe("ui:fullscreenToggled", this.toggleFullscreen.bind(this));
     EventBus.subscribe("ui:viewChanged", () => this.showSidebar(AppState.getState().ui.currentSidebar));
@@ -131,7 +132,6 @@ export const UIController = {
         break;
       case "detail":
         sidebarToShow = SIDEBAR_BEACH;
-        DetailView.updateDetailSidebar();
         break;
     }
 

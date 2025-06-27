@@ -66,7 +66,7 @@ export const MapController = {
     EventBus.subscribe("map:flyTo", this.flyTo.bind(this));
     EventBus.subscribe("map:showPopup", (data) => {
       if (data && data.feature) {
-        setTimeout(() => this.showPopup(data.feature), data.delay || 0);
+        setTimeout(() => this.showPopup(data.feature, data.details), data.delay || 0);
       }
     });
     EventBus.subscribe("map:closeAllPopups", this.closeAllPopups.bind(this));
@@ -261,26 +261,24 @@ export const MapController = {
   /**
    * Show popup for a feature
    * @param {Object} feature - Feature to show popup for
+   * @param {Object} [details] - The full details object from the cache
    */
-  showPopup(feature) {
+  showPopup(feature, details) {
     const coordinates = feature.geometry.coordinates.slice();
-    const properties = feature.properties;
+    const properties = details || feature.properties; // Use cached details if available
+
+    const imageUrl = details ? details['main-image']?.url : properties['Main Image'];
+    const name = details ? details.name : properties.Name;
+    const address = details ? details['formatted-address'] : properties['Formatted Adress'];
 
     const popupHTML = `
       <div class="popup_component" style="cursor: pointer;">
-        <img src="${
-          properties["Main Image"] ||
-          "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300"
-        }"
-             alt="${properties.Name}"
+        <img src="${imageUrl || 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300'}"
+             alt="${name}"
              class="popup_image"
              style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px;">
-        <h4 class="popup_title" style="margin: 10px 0 5px 0; font-size: 16px;">${
-          properties.Name
-        }</h4>
-        <p class="popup_address" style="margin: 0; color: #666; font-size: 14px;">${
-          properties["Formatted Adress"] || "Address not available"
-        }</p>
+        <h4 class="popup_title" style="margin: 10px 0 5px 0; font-size: 16px;">${name}</h4>
+        <p class="popup_address" style="margin: 0; color: #666; font-size: 14px;">${address || 'Address not available'}</p>
       </div>
     `;
 

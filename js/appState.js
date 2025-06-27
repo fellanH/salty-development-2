@@ -13,11 +13,9 @@ let currentState = {
     feature: null,
   },
   cache: {
-    config: null,
-    geojsonData: null,
-    beachDetails: new Map(),
     weatherData: new Map(),
     visibleFeatures: new Map(),
+    beachData: new Map(), // Cache for all beach details
   },
   ui: {
     currentSidebar: "home",
@@ -41,6 +39,7 @@ function appReducer(state, action) {
       return { ...state, map: action.payload };
 
     case "SET_SELECTION":
+      console.log("[DEBUG] SET_SELECTION payload:", action.payload);
       // Avoid unnecessary updates if selection is the same
       if (
         state.currentSelection.id === action.payload.id &&
@@ -91,6 +90,11 @@ function appReducer(state, action) {
     case "CLEAR_OPEN_POPUPS":
       return { ...state, ui: { ...state.ui, openPopups: [] } };
 
+    case "SET_ALL_BEACH_DATA":
+      const beachMap = new Map();
+      action.payload.forEach(beach => beachMap.set(beach.id, beach));
+      return { ...state, cache: { ...state.cache, beachData: beachMap } };
+
     default:
       return state;
   }
@@ -135,7 +139,7 @@ export const AppState = {
   },
 
   getCurrentSelection() {
-    return currentState.currentSelection;
+    return { ...currentState.currentSelection };
   },
 
   getUICachedElement(key) {
@@ -148,5 +152,9 @@ export const AppState = {
 
   getOpenPopups() {
     return currentState.ui.openPopups;
-  }
+  },
+
+  getBeachById(id) {
+    return currentState.cache.beachData.get(id);
+  },
 };

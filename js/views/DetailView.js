@@ -1,5 +1,5 @@
 import { AppState } from "../appState.js";
-import { MockAPI } from "../mockAPI.js";
+import { apiConfig } from "../config/api.js";
 
 export const DetailView = {
   init() {
@@ -11,64 +11,61 @@ export const DetailView = {
    * Update detail sidebar with current selection using a declarative rendering pattern.
    */
   async updateDetailSidebar() {
-    console.log(
-      "[DetailView] updateDetailSidebar",
-      AppState.getCurrentSelection()
-    );
-    const { id, feature } = AppState.getCurrentSelection();
+    const { id } = AppState.getCurrentSelection();
     const viewContainer = AppState.getUICachedElement("SIDEBAR_BEACH");
 
-    if (!id || !feature || !viewContainer) {
-      // Note: The parent controller should handle the fallback logic.
-      // This view is only responsible for rendering.
+    console.log(`[DEBUG-DetailView] Updating sidebar for ID: ${id}`);
+    const cache = AppState.getState().cache.beachData;
+    console.log(`[DEBUG-DetailView] Cache has ${cache.size} items. Cache keys:`, Array.from(cache.keys()));
+
+    if (!id || !viewContainer) {
       return;
     }
 
-    const details = feature.properties;
-    let weatherData = null;
-    try {
-      weatherData = await this.fetchWeatherData(id);
-      console.log("[DetailView] Fetched weather data:", weatherData);
-    } catch (error) {
-      console.error("[DetailView] Error fetching weather data:", error);
+    const details = AppState.getBeachById(id);
+    if (!details) {
+      console.error(`[DetailView] Could not find beach with ID ${id} in cache.`);
+      return;
     }
 
+    console.log('[DEBUG-DetailView] Details object from cache:', details);
+
     const viewData = {
-      imageUrl: details["Main Image"] || "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300",
-      name: details.Name || "Beach Name",
-      googleMapsUrl: details["Google Maps Link"] || "#",
-      address: details["Formatted Address"] || details["Formatted Adress"] || "Google Maps Link",
-      websiteUrl: details["Beach website"],
-      websiteHost: details["Beach website"] && details["Beach website"].startsWith("http") ? new URL(details["Beach website"]).hostname : "",
-      phone: details.Phone || "N/A",
-      restrooms: details.Restrooms || "N/A",
-      showers: details.Showers || "N/A",
-      pets: details["Pets allowed"] || "N/A",
-      parking: details["Parking lot nearby"] || "N/A",
-      parkingHours: details["Parking hours"] || "N/A",
-      camping: details["Camping offered"] || "N/A",
-      bonfire: details["Bonfire availabiliity"] || "N/A",
-      fishing: details.Fishing || "N/A",
-      pier: details.Pier || "N/A",
-      picnic: details["Picnic area/rentals"] || "N/A",
-      surfing: details["Surfing beach"] || "N/A",
-      recreation: details["Recreation activities"] || "N/A",
-      airTemp: weatherData ? `${Math.round(weatherData.temperature)}` : "",
-      feelsLike: weatherData ? `${Math.round(weatherData.feels_like)}°F` : "N/A",
-      humidity: weatherData ? `${weatherData.humidity}%` : "N/A",
-      wind: weatherData ? `${weatherData.windSpeed} mph` : "N/A",
-      windDirection: weatherData ? `${weatherData.windDirection}°` : "N/A",
-      aqi: weatherData?.aqi ?? "N/A",
-      rainfall: weatherData ? `${weatherData.rainfall} in` : "N/A",
-      pressure: weatherData ? `${weatherData.pressure} inHg` : "N/A",
-      pm25: weatherData ? `${weatherData.pm25} µg/m³` : "N/A",
-      pm10: weatherData ? `${weatherData.pm10} µg/m³` : "N/A",
-      waterTemp: weatherData ? `${Math.round(weatherData.water_temp)}°F` : "N/A",
-      waveHeight: weatherData ? `${weatherData.wave_height} ft` : "N/A",
-      oceanCurrent: weatherData?.ocean_current ?? "N/A",
-      uvIndex: weatherData?.uv_index ?? "N/A",
-      cloudCover: weatherData ? `${weatherData.cloud_cover}%` : "N/A",
-      sunset: weatherData ? new Date(weatherData.sunset * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A",
+      imageUrl: details["main-image"]?.url || "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300",
+      name: details.name || "Beach Name",
+      googleMapsUrl: details["google-maps-link"] || "#",
+      address: details["formatted-address"] || details["formatted-adress"] || "Google Maps Link",
+      websiteUrl: details["beach-website"],
+      websiteHost: details["beach-website"] && details["beach-website"].startsWith("http") ? new URL(details["beach-website"]).hostname : "",
+      phone: details.phone || "N/A",
+      restrooms: details.restrooms || "N/A",
+      showers: details.showers || "N/A",
+      pets: details["pets-allowed"] || "N/A",
+      parking: details["parking-lot-nearby"] || "N/A",
+      parkingHours: details["parking-hours"] || "N/A",
+      camping: details["camping-offered"] || "N/A",
+      bonfire: details["bonfire-availabiliity"] || "N/A",
+      fishing: details.fishing || "N/A",
+      pier: details.pier || "N/A",
+      picnic: details["picnic-area-rentals"] || "N/A",
+      surfing: details["surfing-beach"] || "N/A",
+      recreation: details["recreation-activities"] || "N/A",
+      airTemp: details.temperature ? `${Math.round(details.temperature)}` : "",
+      feelsLike: details.feels_like ? `${Math.round(details.feels_like)}°F` : "N/A",
+      humidity: details.humidity ? `${details.humidity}%` : "N/A",
+      wind: details.windSpeed ? `${details.windSpeed} mph` : "N/A",
+      windDirection: details.windDirection ? `${details.windDirection}°` : "N/A",
+      aqi: details.aqi ?? "N/A",
+      rainfall: details.rainfall ? `${details.rainfall} in` : "N/A",
+      pressure: details.pressure ? `${details.pressure} inHg` : "N/A",
+      pm25: details.pm25 ? `${details.pm25} µg/m³` : "N/A",
+      pm10: details.pm10 ? `${details.pm10} µg/m³` : "N/A",
+      waterTemp: details.water_temp ? `${Math.round(details.water_temp)}°F` : "N/A",
+      waveHeight: details.wave_height ? `${details.wave_height} ft` : "N/A",
+      oceanCurrent: details.ocean_current ?? "N/A",
+      uvIndex: details.uv_index ?? "N/A",
+      cloudCover: details.cloud_cover ? `${details.cloud_cover}%` : "N/A",
+      sunset: details.sunset ? new Date(details.sunset).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A",
     };
 
     const dataToAttributeMap = {
@@ -140,20 +137,28 @@ export const DetailView = {
    * @returns {Promise} Weather data
    */
   async fetchWeatherData(locationId) {
-    console.log("[DetailView] fetchWeatherData", locationId);
     const cachedData = AppState.getState().cache.weatherData.get(locationId);
     if (cachedData) {
       console.log("[DetailView] fetchWeatherData cache hit", locationId);
       return cachedData;
     }
 
-    const data = await MockAPI.fetchWeather(locationId);
-    console.log("[DetailView] fetchWeatherData fetched", data);
-    AppState.dispatch({ type: "SET_WEATHER_DATA", payload: { id: locationId, data } });
-    setTimeout(() => {
-      AppState.dispatch({ type: "DELETE_WEATHER_DATA", payload: { id: locationId } });
-    }, 5 * 60 * 1000);
+    try {
+      const response = await fetch(`${apiConfig.BASE_URL}/api/weather/${locationId}`);
+      if (!response.ok) {
+        throw new Error('Weather data not available');
+      }
+      const data = await response.json();
+      console.log("[DetailView] fetchWeatherData fetched", data);
+      AppState.dispatch({ type: "SET_WEATHER_DATA", payload: { id: locationId, data } });
+      setTimeout(() => {
+        AppState.dispatch({ type: "DELETE_WEATHER_DATA", payload: { id: locationId } });
+      }, 5 * 60 * 1000); // 5 minute cache
 
-    return data;
+      return data;
+    } catch (error) {
+      console.error('[DetailView] Error fetching weather data:', error);
+      return null;
+    }
   },
 }; 

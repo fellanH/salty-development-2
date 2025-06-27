@@ -74,7 +74,7 @@ const ActionController = {
 
       case "UPDATE_APP_STATE":
         if (feature && entityType) {
-          const entityId = Utils.getFeatureEntityId(feature);
+          const entityId = feature.properties['Item ID'] || feature.id;
           AppState.dispatch({
             type: "SET_SELECTION",
             payload: { type: entityType, id: entityId, feature },
@@ -88,7 +88,9 @@ const ActionController = {
 
       case "SHOW_POPUP":
         if (feature) {
-          EventBus.publish("map:showPopup", { feature, delay: action.delay });
+          const entityId = feature.properties['Item ID'] || feature.id;
+          const details = AppState.getBeachById(entityId);
+          EventBus.publish("map:showPopup", { feature, details, delay: action.delay });
         }
         break;
 
