@@ -1,5 +1,5 @@
 export const apiConfig = {
-  BASE_URL: "https://salty-development-2.vercel.app/", // Replace with your actual Vercel deployment URL
+  BASE_URL: "https://salty-development-2.vercel.app",
   WEATHER_PROXY_URL: "", // Will use mock for now
 };
 
