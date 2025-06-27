@@ -1,6 +1,6 @@
-# Salty Map Application
+# Salty Development 2
 
-Salty Map is a modern, interactive web application designed to display geographical data, initially focused on beaches. It features a responsive design, a modular architecture, and a highly configurable event-driven system for user interactions. The application is built with vanilla JavaScript (ES6 Modules), Mapbox GL JS for the interactive map, and is designed to be easily integrated with a CMS like Webflow or used as a standalone project.
+Salty Development 2 is a modern, interactive web application designed to display geographical data with a focus on beaches. It is built to integrate seamlessly with a Webflow CMS backend, providing a powerful and flexible solution for dynamic, map-based content. The application features a responsive design, a modular architecture, and a highly configurable event-driven system for user interactions.
 
 ## Table of Contents
 
@@ -19,39 +19,44 @@ Salty Map is a modern, interactive web application designed to display geographi
 ## Features
 
 - **Interactive Map**: Utilizes Mapbox GL JS to display clustered and individual points of interest.
+- **Live Data Integration**: Fetches and displays data directly from a Webflow CMS collection.
 - **Modular & Maintainable**: Code is split into logical modules (UI, Map, State, etc.) for easy maintenance and scalability.
 - **Event-Driven Architecture**: Modules communicate through a central Event Bus, promoting loose coupling and flexibility.
 - **Configuration-Centric**: Core behaviors, UI elements, and map settings are defined in a central `config.js` file, allowing for easy customization without deep code changes.
 - **Responsive Design**: A fluid user experience across desktop and mobile devices.
 - **Dynamic Sidebars**: Multiple sidebar panels for displaying home content, lists of features, and detailed information.
-- **Client-Side Data Fetching**: Asynchronously fetches and displays data from an API (currently mocked).
+- **Serverless-Ready Backend**: Local development environment mimics a Vercel-like serverless setup, handling API requests to the Webflow backend.
 
 ## Tech Stack
 
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript (ES6+)
 - **Mapping**: Mapbox GL JS
-- **Development Server**: Node.js / Express (for local development with CORS support)
-- **Dependencies**: `axios` (for API requests), `cors`, `dotenv`, `express`.
+- **Backend**: Node.js / Express
+- **CMS**: Webflow
+- **Local Development**: Vercel CLI (`vercel dev`)
+- **Dependencies**: `axios`, `cors`, `dotenv`, `express`, `node-fetch`, `@turf/turf`.
 
 ## Project Structure
 
-The project follows a modular structure, separating concerns into distinct files within the `js/` directory.
+The project follows a modular structure, with a clear separation between the frontend application logic and the backend API handlers.
 
 ```
-salty-map/
+salty-development-2/
+├── api/
+│   └── beaches.js          # Serverless function to fetch and transform data from Webflow
 ├── js/
 │   ├── appState.js             # Manages global application state
 │   ├── config.js               # Central configuration file
 │   ├── mapController.js        # Handles all Mapbox logic and interactions
 │   ├── uiController.js         # Manages all DOM manipulation and UI events
-│   ├── navigationController.js # Handles high-level navigation logic
 │   ├── actionController.js     # Executes action sequences from the config
 │   ├── eventBus.js             # Simple Pub/Sub event bus for module communication
-│   ├── utils.js                # General utility functions (debounce, etc.)
-│   └── mockAPI.js              # Simulates a backend API for development
+│   └── utils.js                # General utility functions
 │
-├── index.js                    # Main application entry point (initializes modules)
-├── server.js                   # Optional Express server for local development
+├── index.js                    # Main application entry point
+├── server.js                   # Express server that emulates Vercel's routing for local dev
+├── vercel.json                 # Vercel deployment configuration
+├── .env.local.example          # Example environment variables file
 └── README.md                   # This file
 ```
 
@@ -61,46 +66,62 @@ salty-map/
 
 - Node.js (v14 or later recommended)
 - npm (usually comes with Node.js)
+- Vercel CLI (`npm i -g vercel`)
 - A Mapbox Access Token
+- A Webflow API Token and Collection ID
 
 ### Installation & Setup
 
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/your-username/salty-map.git
-    cd salty-map
+    git clone https://github.com/your-username/salty-development-2.git
+    cd salty-development-2
     ```
 
 2.  **Install dependencies:**
-    The `package.json` file lists the dependencies for the local development server.
 
     ```bash
     npm install
     ```
 
-3.  **Configure the application:**
-    Open `js/config.js` and update the following values:
+3.  **Set up environment variables:**
+    Create a `.env.local` file in the root of the project by copying the example file:
+    ```bash
+    cp .env.local.example .env.local
+    ```
+    Open `.env.local` and add your secret keys and IDs:
+    ```
+    WEBFLOW_API_TOKEN="YOUR_WEBFLOW_API_TOKEN"
+    BEACHES_COLLECTION_ID="YOUR_WEBFLOW_BEACHES_COLLECTION_ID"
+    ```
 
+4.  **Configure the application:**
+    Open `js/config/api.js` and `js/config/map.js` to update the following values:
     - `MAP.ACCESS_TOKEN`: Add your Mapbox access token here.
     - `MAP.STYLE`: Set this to your Mapbox Studio style URL.
+    - `API.BASE_URL`: Ensure this points to `http://localhost:3000` for local development.
 
-4.  **Start the development server:**
-    The provided `server.js` uses Express to serve the files and enable CORS.
+5.  **Start the development server:**
+    The `server.js` file combined with the Vercel CLI creates a local environment that mirrors the production serverless setup.
     ```bash
-    npm start
+    npm run dev:local
     ```
     The application will be available at `http://localhost:3000`.
 
 ## Configuration (`config.js`)
 
-This is the most important file for customizing the application's behavior.
+The `js/config.js` file and the surrounding `js/config/` directory are the most important places for customizing the application's behavior.
 
-### Map Configuration
+### Map Configuration (`js/config/map.js`)
 
 The `MAP` object contains all settings for the Mapbox instance (token, style URL, initial camera position, zoom levels, etc.).
 
-### Event Actions
+### API Configuration (`js/config/api.js`)
+
+The `API` object defines the endpoints for the backend. The `server.js` file will route requests from the frontend to the corresponding files in the `/api` directory.
+
+### Event Actions (`js/config/actions.js`)
 
 `EVENT_ACTIONS` is the core of the application's interactivity. It defines named sequences of actions that can be triggered by user interactions.
 
@@ -118,109 +139,61 @@ selectBeach: {
 },
 ```
 
-When the `selectBeach` action is executed, it will trigger a series of events to:
+### DOM Selectors (`js/config/ui.js`)
 
-1.  Animate the map to the selected beach's coordinates (`FLY_TO`).
-2.  Update the global application state with the selection (`UPDATE_APP_STATE`).
-3.  Switch the visible sidebar to the "detail" panel (`SHOW_SIDEBAR`).
-4.  Show a Mapbox popup after a 100ms delay (`SHOW_POPUP`).
-
-### DOM Selectors
-
-The `SELECTORS` object maps logical names to CSS selectors. It is highly recommended to use `data-` attributes (e.g., `[sidebar="wrapper"]`) instead of Webflow's default IDs for stability.
-
-### List Item Templates
-
-`LIST_ITEM_TEMPLATES` defines how to render different types of features (states, regions, beaches) in the sidebar list, mapping data from a feature's properties to elements within a `<template>`.
+The `SELECTORS` object maps logical names to CSS selectors. It is highly recommended to use `data-` attributes (e.g., `[data-sidebar="wrapper"]`) for stability.
 
 ## Architecture Deep Dive
 
 ### Core Principles
 
-- **Separation of Concerns**: Each module has a single, well-defined responsibility. (`MapController` only touches the map, `UIController` only touches the DOM, `AppState` only manages state).
-- **Single Source of Truth**: `AppState` holds the current state of the application. All modules read from this state to make decisions.
-- **Loose Coupling via Events**: Modules do not call each other's methods directly. Instead, they publish messages to the `EventBus`. This means you can replace or modify a module without breaking others.
+- **Separation of Concerns**: Each module has a single, well-defined responsibility.
+- **Single Source of Truth**: `AppState` holds the current application state.
+- **Loose Coupling via Events**: Modules communicate through the `EventBus`.
 
 ### Application Flow: A User Click
 
-Understanding the flow of a single interaction is key to understanding the new event-driven architecture.
+1.  **User Interaction**: A user clicks a feature on the map.
+2.  **MapController**: The Mapbox `click` event fires, identifies the feature, and determines the correct action name (e.g., `selectBeach`).
+3.  **ActionController**: The "conductor." It looks up the `selectBeach` sequence in the config and publishes an event to the `EventBus` for each step in the sequence.
+4.  **Event Subscriptions**: Other modules (`MapController`, `UIController`) are subscribed to these events and perform their respective actions (flying the map, showing a sidebar, etc.).
+5.  **State Changes**: `AppState` is updated, which may trigger further events (like `state:selectionChanged`) to cause UI components to re-render with new data.
 
-1.  **User Interaction**: The user clicks on a beach feature on the map.
-2.  **MapController**: The Mapbox `click` event listener fires. It identifies the feature and calls `NavigationController`.
-3.  **NavigationController**: It determines the correct action name (e.g., `selectBeach`) and calls `ActionController.execute()`.
-4.  **ActionController**: This is the "conductor." It looks up the `selectBeach` sequence in the config and iterates through its actions, **publishing an event to the EventBus for each step**:
-    - Action: `{ type: "FLY_TO", ... }` -> Publishes a `map:flyTo` event.
-    - Action: `{ type: "UPDATE_APP_STATE" }` -> Calls `AppState.setSelection()`.
-    - Action: `{ type: "SHOW_SIDEBAR", ... }` -> Publishes a `ui:showSidebar` event.
-    - Action: `{ type: "SHOW_POPUP", ... }` -> Publishes a `map:showPopup` event.
-5.  **Event Subscriptions & State Changes**:
-    - `MapController` is subscribed to `map:flyTo` and `map:showPopup` and calls its internal methods to animate the map and show a popup.
-    - `UIController` is subscribed to `ui:showSidebar` and calls its internal method to change the visible sidebar panel.
-    - The `AppState.setSelection()` method publishes its own `state:selectionChanged` event. `UIController` is subscribed to this and knows when to update the detail sidebar with new data.
+### Backend: Vercel-style API Routes
 
-### The Event Bus (`eventBus.js`)
+The project uses a local Express server (`server.js`) to emulate the behavior of Vercel's serverless functions.
 
-A simple but powerful publish/subscribe system.
-
-- `EventBus.subscribe(eventName, callback)`: Listens for an event.
-- `EventBus.publish(eventName, data)`: Fires an event, passing data to all subscribers.
-
-**Key Events**:
-
-- `map:flyTo`: Tells the map to fly to a location.
-- `map:showPopup`: Tells the map to show a popup for a feature.
-- `ui:showSidebar`: Tells the UI to switch the active sidebar panel.
-- `ui:toggleFullscreen`: Tells the UI to toggle the map/sidebar view.
-- `state:selectionChanged`: Notifies the app that the selected item has changed.
-
-### Module Breakdown
-
-- `index.js`: Initializes the application.
-- `appState.js`: The brain. Holds all shared data and UI state. Publishes an event when the selection changes.
-- `config.js`: The rulebook. Defines how the application looks and behaves.
-- `mapController.js`: The cartographer. Manages the Mapbox map and subscribes to map-related events.
-- `uiController.js`: The interior designer. Manages the DOM and subscribes to UI and state-change events.
-- `navigationController.js`: The navigator. Decides which action sequence to run.
-- `actionController.js`: The conductor. Executes action sequences by publishing events.
-- `eventBus.js`: The messenger. Allows modules to talk to each other without being directly connected.
-- `utils.js`: The toolbox. Provides reusable helper functions like `debounce` and the critical `getFeatureEntityId` for consistent ID handling.
-- `mockAPI.js`: The stand-in. Pretends to be a server for development.
-
-## Working with the UI
-
-### Action-Driven Event Handling
-
-To make an element clickable, simply add a `data-action` attribute to your HTML element.
-
-```html
-<button class="modal_back-button" data-action="backToList">Back</button>
-```
-
-The `UIController` has a single, global click listener that looks for this attribute. When the button is clicked, it will find the `backToList` action in `Config.EVENT_ACTIONS` and execute its defined sequence.
-
-### Managing Sidebars
-
-To switch sidebars, trigger an action that includes `{ type: "SHOW_SIDEBAR", sidebar: "list" }`. The `UIController` will hear the resulting event and handle the DOM changes.
-
-## Working with the Map
-
-The `MapController` is responsible for all map-related functionality.
-
-- **Layers**: The interactive layer IDs (`STATES`, `REGIONS`, `BEACHES`) must match the layer IDs in your Mapbox Studio style.
-- **Interactions**: Click and hover events are handled for these layers.
-- **Updating the List**: On `moveend`, the map queries for visible features and tells the `UIController` to render them.
+- Any `.js` file placed in the `/api` directory automatically becomes an API endpoint.
+- For example, a request to `GET /api/beaches` on the frontend will be handled by the logic in `api/beaches.js` on the backend.
+- This structure allows for a clean separation of frontend and backend concerns and makes deployment to a platform like Vercel seamless.
 
 ## API Integration
 
-The application uses `mockAPI.js` for development. To connect to a real backend:
+The application is architected to fetch data from a live Webflow CMS backend. The `mockAPI.js` file has been deprecated.
 
-1.  Update `config.js` with your live API endpoints.
-2.  Create a new `js/apiService.js` to handle `fetch` or `axios` requests.
-3.  In `uiController.js`, import and use your new `ApiService` instead of `MockAPI` in methods like `updateDetailSidebar`.
+### `api/beaches.js`
+
+This file is the heart of the backend integration. It is responsible for:
+1.  **Fetching All Items**: It handles the pagination of the Webflow API to retrieve the complete list of beach items.
+2.  **Fetching the Schema**: It dynamically fetches the Webflow Collection's schema to understand the structure of the data, particularly for `Option` fields.
+3.  **Data Transformation**: It contains a powerful `transformBeaches` function that cleans, formats, and restructures the raw JSON from Webflow into a format that is easy for the frontend to consume. This includes:
+    - Mapping relational IDs (for amenities, states) to human-readable names.
+    - Parsing and cleaning numerical data from string fields.
+    - Normalizing the data structure for consistency.
+
+To connect to your Webflow instance, you must provide your API token and Collection ID in the `.env.local` file.
 
 ## Deployment
 
-This is a static frontend project and can be deployed to any static web hosting service like Netlify, Vercel, or GitHub Pages. There is no build step required.
+This project is optimized for deployment on [Vercel](https://vercel.com). The `vercel.json` file is pre-configured to handle the serverless API routes.
+
+To deploy:
+1.  Push your code to a Git repository (GitHub, GitLab, etc.).
+2.  Import the project into Vercel.
+3.  Configure the Environment Variables (`WEBFLOW_API_TOKEN`, `BEACHES_COLLECTION_ID`, and your Mapbox token if you choose to make it private) in the Vercel project settings.
+4.  Vercel will automatically build and deploy the application.
+
+While it can be deployed to other static hosting services, Vercel's handling of the `/api` directory provides the most seamless experience.
 
 ## Contributing
 
