@@ -281,7 +281,7 @@ export const MapController = {
       : properties["Main Image"];
     const name = details ? details.name : properties.Name;
     const address = details
-      ? details["address"]
+      ? details["adress"]
       : properties["Formatted Adress"];
     const hours = details ? details["hours"] : properties["Hours"];
     const isPaidPartner = details
