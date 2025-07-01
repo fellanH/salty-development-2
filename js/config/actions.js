@@ -33,7 +33,7 @@ export const eventActionsConfig = {
     actions: [
       { type: "UPDATE_APP_STATE" },
       { type: "SHOW_SIDEBAR", sidebar: "detail" },
-      { type: "FLY_TO", zoomLevel: 9, speed: 2 },
+      { type: "FLY_TO", zoomLevel: 14.5, speed: 2 },
       { type: "SHOW_POPUP", delay: 100, when: { context: "isDesktop" } },
     ],
   },
