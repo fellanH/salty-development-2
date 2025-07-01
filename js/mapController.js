@@ -66,7 +66,10 @@ export const MapController = {
     EventBus.subscribe("map:flyTo", this.flyTo.bind(this));
     EventBus.subscribe("map:showPopup", (data) => {
       if (data && data.feature) {
-        setTimeout(() => this.showPopup(data.feature, data.details), data.delay || 0);
+        setTimeout(
+          () => this.showPopup(data.feature, data.details),
+          data.delay || 0
+        );
       }
     });
     EventBus.subscribe("map:closeAllPopups", this.closeAllPopups.bind(this));
@@ -129,19 +132,25 @@ export const MapController = {
         } else {
           // Unset state on the previously hovered feature
           if (this.hoveredFeature) {
-            AppState.getMap().setFeatureState(this.hoveredFeature, { state: false });
+            AppState.getMap().setFeatureState(this.hoveredFeature, {
+              state: false,
+            });
           }
 
           // Set state on the new hovered feature
           this.hoveredFeature = e.features[0];
-          AppState.getMap().setFeatureState(this.hoveredFeature, { state: true });
+          AppState.getMap().setFeatureState(this.hoveredFeature, {
+            state: true,
+          });
         }
       }
     });
 
     AppState.getMap().on("mouseleave", interactiveLayers, () => {
       if (this.hoveredFeature) {
-        AppState.getMap().setFeatureState(this.hoveredFeature, { state: false });
+        AppState.getMap().setFeatureState(this.hoveredFeature, {
+          state: false,
+        });
       }
       this.hoveredFeature = null;
       AppState.getMap().getCanvas().style.cursor = "";
@@ -267,24 +276,76 @@ export const MapController = {
     const coordinates = feature.geometry.coordinates.slice();
     const properties = details || feature.properties; // Use cached details if available
 
-    const imageUrl = details ? details['main-image']?.url : properties['Main Image'];
+    const imageUrl = details
+      ? details["main-image"]?.url
+      : properties["Main Image"];
     const name = details ? details.name : properties.Name;
-    const address = details ? details['formatted-address'] : properties['Formatted Adress'];
+    const address = details
+      ? details["formatted-address"]
+      : properties["Formatted Adress"];
+    const hours = details ? details["hours"] : properties["Hours"];
+    const isPaidPartner = details
+      ? details["paid-partner"]
+      : properties["Paid Partner"];
+    const website = details ? details["website"] : properties["Website"];
+    const phone = details ? details["phone"] : properties["Phone"];
+    const buttonLink = details
+      ? details["button-link"]
+      : properties["Button Link"];
 
     const popupHTML = `
       <div class="popup_component" style="cursor: pointer;">
-        <img src="${imageUrl || 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300'}"
+        <img src="${
+          imageUrl ||
+          "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300"
+        }"
              alt="${name}"
              class="popup_image"
              style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px;">
         <h4 class="popup_title" style="margin: 10px 0 5px 0; font-size: 16px;">${name}</h4>
-        <p class="popup_address" style="margin: 0; color: #666; font-size: 14px;">${address || 'Address not available'}</p>
+        <p class="popup_address" style="margin: 0; color: #666; font-size: 14px;">${
+          address || "Address not available"
+        }</p>
+      </div>
+    `;
+
+    const popupHTML2 = `
+      <div class="popup_component">
+       <img src="${
+         imageUrl ||
+         "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300"
+       }" alt="${name}" class="popup_image">
+       ${isPaidPartner ? '<p class="partner-badge">Paid Partner</p>' : ""}
+        <div class="spacer-tiny"></div>
+       <h4 class="popup_title">${name}</h4>
+        <div class="spacer-xxsmall"></div>
+       ${address ? `<p class="popup_address">${address}</p>` : ""}
+       ${hours ? `<p class="popup_hours">Hours: ${hours}</p>` : ""}
+       ${
+         website
+           ? `<a href="${website}" target="_blank" class="salty-link">${website.replace(
+               /^https?:\/\//,
+               ""
+             )}</a>`
+           : ""
+       }
+       ${
+         phone
+           ? `<a href="tel:${phone}" target="_blank" class="salty-link">${phone}</a>`
+           : ""
+       }
+       <div class="spacer-xsmall"></div>
+       ${
+         buttonLink
+           ? `<a href="${buttonLink}" class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140);"><div>Learn More</div></a>`
+           : ""
+       }
       </div>
     `;
 
     const popup = new mapboxgl.Popup({ offset: Config.UI.POPUP_OFFSET })
       .setLngLat(coordinates)
-      .setHTML(popupHTML)
+      .setHTML(popupHTML2)
       .addTo(AppState.getMap());
 
     // Track the popup
@@ -297,9 +358,9 @@ export const MapController = {
     // Add click listener to the popup to open the detail view
     const popupEl = popup.getElement();
     popupEl.addEventListener("click", () => {
-      ActionController.execute('selectBeachFromPopup', {
+      ActionController.execute("selectBeachFromPopup", {
         entityType: "beach",
-        feature: feature
+        feature: feature,
       });
       popup.remove();
     });
