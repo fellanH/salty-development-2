@@ -281,13 +281,13 @@ export const MapController = {
       : properties["Main Image"];
     const name = details ? details.name : properties.Name;
     const address = details
-      ? details["formatted-address"]
+      ? details["address"]
       : properties["Formatted Adress"];
     const hours = details ? details["hours"] : properties["Hours"];
     const isPaidPartner = details
       ? details["paid-partner"]
       : properties["Paid Partner"];
-    const website = details ? details["website"] : properties["Website"];
+    const website = details ? details["beach-website"] : properties["Website"];
     const phone = details ? details["phone"] : properties["Phone"];
     const buttonLink = details
       ? details["button-link"]
