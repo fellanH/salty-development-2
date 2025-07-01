@@ -335,11 +335,7 @@ export const MapController = {
            : ""
        }
        <div class="spacer-xsmall"></div>
-       ${
-         buttonLink
-           ? `<a href="${buttonLink}" class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140);"><div>Learn More</div></a>`
-           : ""
-       }
+       <div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140));">See Details</div>
       </div>
     `;
 
