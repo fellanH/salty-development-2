@@ -1,5 +1,5 @@
 export const eventActionsConfig = {
-  'selectState': {
+  selectState: {
     description: "Action when a state is clicked on the map or in the list.",
     actions: [
       { type: "FLY_TO", zoomLevel: 5, speed: 2 },
@@ -7,7 +7,7 @@ export const eventActionsConfig = {
       { type: "SHOW_SIDEBAR", sidebar: "list" },
     ],
   },
-  'selectRegion': {
+  selectRegion: {
     description: "Action when a region/city cluster is clicked.",
     actions: [
       { type: "FLY_TO", zoomLevel: 9, speed: 2 },
@@ -15,16 +15,20 @@ export const eventActionsConfig = {
       { type: "SHOW_SIDEBAR", sidebar: "list" },
     ],
   },
-  'selectBeachFromMap': {
+  selectBeachFromMap: {
     description: "Action when a beach is selected directly from the map.",
     actions: [
       { type: "UPDATE_APP_STATE" },
       { type: "FLY_TO", zoomLevel: 14.5, speed: 2 },
       { type: "SHOW_POPUP", delay: 100 },
-      { type: "SHOW_SIDEBAR", sidebar: "detail", when: { context: "isMobile" } },
+      {
+        type: "SHOW_SIDEBAR",
+        sidebar: "detail",
+        when: { context: "isMobile" },
+      },
     ],
   },
-  'selectBeachFromList': {
+  selectBeachFromList: {
     description: "Action when a beach is selected from a sidebar list.",
     actions: [
       { type: "UPDATE_APP_STATE" },
@@ -33,15 +37,20 @@ export const eventActionsConfig = {
       { type: "SHOW_POPUP", delay: 100, when: { context: "isDesktop" } },
     ],
   },
-  'selectBeachFromPopup': {
+  selectBeachFromPopup: {
     description: "Action when a beach popup is clicked.",
     actions: [
       { type: "UPDATE_APP_STATE" },
       { type: "SHOW_SIDEBAR", sidebar: "detail" },
-      { type: "FLY_TO", zoomLevel: 14, speed: 1.2, when: { context: "isMobile" } }
-    ]
+      {
+        type: "FLY_TO",
+        zoomLevel: 14,
+        speed: 1.2,
+        when: { context: "isMobile" },
+      },
+    ],
   },
-  
+
   // Defines actions for static UI buttons
   navigateHome: {
     description: "Action for buttons navigating to the home screen.",
@@ -65,11 +74,10 @@ export const eventActionsConfig = {
     actions: [
       { type: "SHOW_SIDEBAR", sidebar: "list" },
       { type: "CLOSE_ALL_POPUPS" },
-      { type: "ZOOM_TO", zoomLevel: 9, speed: 1.4 },
     ],
   },
   toggleFullscreen: {
     description: "Action for the fullscreen toggle button.",
     actions: [{ type: "TOGGLE_FULLSCREEN" }],
   },
-}; 
+};
