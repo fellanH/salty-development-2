@@ -11,62 +11,118 @@ export const DetailView = {
    * Update detail sidebar with current selection using a declarative rendering pattern.
    */
   async updateDetailSidebar() {
-    const { id } = AppState.getCurrentSelection();
+    const { id, type } = AppState.getCurrentSelection();
     const viewContainer = AppState.getUICachedElement("SIDEBAR_BEACH");
 
-    console.log(`[DEBUG-DetailView] Updating sidebar for ID: ${id}`);
-    const cache = AppState.getState().cache.beachData;
-    console.log(`[DEBUG-DetailView] Cache has ${cache.size} items. Cache keys:`, Array.from(cache.keys()));
+    console.log(`[DEBUG-DetailView] Updating sidebar for ID: ${id}, type: ${type}`);
 
     if (!id || !viewContainer) {
       return;
     }
 
-    const details = AppState.getBeachById(id);
-    if (!details) {
-      console.error(`[DetailView] Could not find beach with ID ${id} in cache.`);
-      return;
+    let details;
+    if (type === "poi") {
+      details = AppState.getPOIById(id);
+      const cache = AppState.getState().cache.poiData;
+      console.log(`[DEBUG-DetailView] POI Cache has ${cache.size} items. Cache keys:`, Array.from(cache.keys()));
+      if (!details) {
+        console.error(`[DetailView] Could not find POI with ID ${id} in cache.`);
+        return;
+      }
+    } else {
+      details = AppState.getBeachById(id);
+      const cache = AppState.getState().cache.beachData;
+      console.log(`[DEBUG-DetailView] Beach Cache has ${cache.size} items. Cache keys:`, Array.from(cache.keys()));
+      if (!details) {
+        console.error(`[DetailView] Could not find beach with ID ${id} in cache.`);
+        return;
+      }
     }
 
     console.log('[DEBUG-DetailView] Details object from cache:', details);
 
-    const viewData = {
-      imageUrl: details["main-image"]?.url || "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300",
-      name: details.name || "Beach Name",
-      googleMapsUrl: details["google-maps-link"] || "#",
-      address: details["formatted-address"] || details["formatted-adress"] || "Google Maps Link",
-      websiteUrl: details["beach-website"],
-      websiteHost: details["beach-website"] && details["beach-website"].startsWith("http") ? new URL(details["beach-website"]).hostname : "",
-      phone: details.phone || "N/A",
-      restrooms: details.restrooms || "N/A",
-      showers: details.showers || "N/A",
-      pets: details["pets-allowed"] || "N/A",
-      parking: details["parking-lot-nearby"] || "N/A",
-      parkingHours: details["parking-hours"] || "N/A",
-      camping: details["camping-offered"] || "N/A",
-      bonfire: details["bonfire-availabiliity"] || "N/A",
-      fishing: details.fishing || "N/A",
-      pier: details.pier || "N/A",
-      picnic: details["picnic-area-rentals"] || "N/A",
-      surfing: details["surfing-beach"] || "N/A",
-      recreation: details["recreation-activities"] || "N/A",
-      airTemp: details.temperature ? `${Math.round(details.temperature)}` : "",
-      feelsLike: details.feels_like ? `${Math.round(details.feels_like)}°F` : "N/A",
-      humidity: details.humidity ? `${details.humidity}%` : "N/A",
-      wind: details.windSpeed ? `${details.windSpeed} mph` : "N/A",
-      windDirection: details.windDirection ? `${details.windDirection}°` : "N/A",
-      aqi: details.aqi ?? "N/A",
-      rainfall: details.rainfall ? `${details.rainfall} in` : "N/A",
-      pressure: details.pressure ? `${details.pressure} inHg` : "N/A",
-      pm25: details.pm25 ? `${details.pm25} µg/m³` : "N/A",
-      pm10: details.pm10 ? `${details.pm10} µg/m³` : "N/A",
-      waterTemp: details.water_temp ? `${Math.round(details.water_temp)}°F` : "N/A",
-      waveHeight: details.wave_height ? `${details.wave_height} ft` : "N/A",
-      oceanCurrent: details.ocean_current ?? "N/A",
-      uvIndex: details.uv_index ?? "N/A",
-      cloudCover: details.cloud_cover ? `${details.cloud_cover}%` : "N/A",
-      sunset: details.sunset ? new Date(details.sunset).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A",
-    };
+    let viewData;
+    if (type === "poi") {
+      // POI-specific data mapping
+      viewData = {
+        imageUrl: details.imageUrl || details["main-image"]?.url || "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
+        name: details.name || details.Name || "Point of Interest",
+        googleMapsUrl: details["google-maps-link"] || details.googleMapsUrl || "#",
+        address: details.address || details["formatted-address"] || details["formatted-adress"] || "Address not available",
+        websiteUrl: details.website || details["website-url"],
+        websiteHost: (details.website || details["website-url"]) && (details.website || details["website-url"]).startsWith("http") ? new URL(details.website || details["website-url"]).hostname : "",
+        phone: details.phone || "N/A",
+        // POI-specific fields
+        restrooms: "N/A", // POIs don't typically have amenity details
+        showers: "N/A",
+        pets: "N/A",
+        parking: "N/A",
+        parkingHours: "N/A",
+        camping: "N/A",
+        bonfire: "N/A",
+        fishing: "N/A",
+        pier: "N/A",
+        picnic: "N/A",
+        surfing: "N/A",
+        recreation: details.type || details.Type || "Point of Interest",
+        // Weather data (POIs typically don't have weather data, so set to N/A)
+        airTemp: "N/A",
+        feelsLike: "N/A",
+        humidity: "N/A",
+        wind: "N/A",
+        windDirection: "N/A",
+        aqi: "N/A",
+        rainfall: "N/A",
+        pressure: "N/A",
+        pm25: "N/A",
+        pm10: "N/A",
+        waterTemp: "N/A",
+        waveHeight: "N/A",
+        oceanCurrent: "N/A",
+        uvIndex: "N/A",
+        cloudCover: "N/A",
+        sunset: "N/A",
+      };
+    } else {
+      // Beach data mapping (existing)
+      viewData = {
+        imageUrl: details["main-image"]?.url || "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300",
+        name: details.name || "Beach Name",
+        googleMapsUrl: details["google-maps-link"] || "#",
+        address: details["formatted-address"] || details["formatted-adress"] || "Google Maps Link",
+        websiteUrl: details["beach-website"],
+        websiteHost: details["beach-website"] && details["beach-website"].startsWith("http") ? new URL(details["beach-website"]).hostname : "",
+        phone: details.phone || "N/A",
+        restrooms: details.restrooms || "N/A",
+        showers: details.showers || "N/A",
+        pets: details["pets-allowed"] || "N/A",
+        parking: details["parking-lot-nearby"] || "N/A",
+        parkingHours: details["parking-hours"] || "N/A",
+        camping: details["camping-offered"] || "N/A",
+        bonfire: details["bonfire-availabiliity"] || "N/A",
+        fishing: details.fishing || "N/A",
+        pier: details.pier || "N/A",
+        picnic: details["picnic-area-rentals"] || "N/A",
+        surfing: details["surfing-beach"] || "N/A",
+        recreation: details["recreation-activities"] || "N/A",
+        airTemp: details.temperature ? `${Math.round(details.temperature)}` : "",
+        feelsLike: details.feels_like ? `${Math.round(details.feels_like)}°F` : "N/A",
+        humidity: details.humidity ? `${details.humidity}%` : "N/A",
+        wind: details.windSpeed ? `${details.windSpeed} mph` : "N/A",
+        windDirection: details.windDirection ? `${details.windDirection}°` : "N/A",
+        aqi: details.aqi ?? "N/A",
+        rainfall: details.rainfall ? `${details.rainfall} in` : "N/A",
+        pressure: details.pressure ? `${details.pressure} inHg` : "N/A",
+        pm25: details.pm25 ? `${details.pm25} µg/m³` : "N/A",
+        pm10: details.pm10 ? `${details.pm10} µg/m³` : "N/A",
+        waterTemp: details.water_temp ? `${Math.round(details.water_temp)}°F` : "N/A",
+        waveHeight: details.wave_height ? `${details.wave_height} ft` : "N/A",
+        oceanCurrent: details.ocean_current ?? "N/A",
+        uvIndex: details.uv_index ?? "N/A",
+        cloudCover: details.cloud_cover ? `${details.cloud_cover}%` : "N/A",
+        sunset: details.sunset ? new Date(details.sunset).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A",
+      };
+    }
 
     const dataToAttributeMap = {
       imageUrl: "image",

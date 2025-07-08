@@ -16,6 +16,7 @@ let currentState = {
     weatherData: new Map(),
     visibleFeatures: new Map(),
     beachData: new Map(), // Cache for all beach details
+    poiData: new Map(), // Cache for all POI details
   },
   ui: {
     currentSidebar: "home",
@@ -95,6 +96,11 @@ function appReducer(state, action) {
       action.payload.forEach(beach => beachMap.set(beach.id, beach));
       return { ...state, cache: { ...state.cache, beachData: beachMap } };
 
+    case "SET_ALL_POI_DATA":
+      const poiMap = new Map();
+      action.payload.forEach(poi => poiMap.set(poi.id, poi));
+      return { ...state, cache: { ...state.cache, poiData: poiMap } };
+
     default:
       return state;
   }
@@ -156,5 +162,9 @@ export const AppState = {
 
   getBeachById(id) {
     return currentState.cache.beachData.get(id);
+  },
+
+  getPOIById(id) {
+    return currentState.cache.poiData.get(id);
   },
 };

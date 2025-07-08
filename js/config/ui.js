@@ -124,4 +124,29 @@ export const featureConfig = {
       }, // Ensure delimiter is visible
     },
   },
+  poi: {
+    templateId: "#beach-list-item-template", // Reuse beach template for now
+    actionName: "selectPOIFromList",
+    dataMapping: {
+      '[beach-list-item="image"]': {
+        type: "image",
+        source: (p) =>
+          p["Main Image"] || p.imageUrl ||
+          "https://cdn.prod.website-files.com/677e87dd7e4a4c73cbae4e0e/677e87dd7e4a4c73cbae4ee3_placeholder-image.svg",
+      },
+      '[beach-list-item="title"]': {
+        type: "text",
+        source: (p) => p.Name || p.name || "POI",
+      },
+      '[beach-list-item="location-cluster"]': {
+        type: "text",
+        source: (p) => p.type || p.Type || "Point of Interest",
+      },
+      '[beach-list-item="state"]': { type: "text", source: (p) => p.State || p.state },
+      '[beach-list-item="delimiter"]': {
+        type: "style",
+        style: { display: "inline" },
+      },
+    },
+  },
 }; 

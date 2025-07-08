@@ -89,7 +89,12 @@ const ActionController = {
       case "SHOW_POPUP":
         if (feature) {
           const entityId = feature.properties['Item ID'] || feature.id;
-          const details = AppState.getBeachById(entityId);
+          let details;
+          if (entityType === "poi") {
+            details = AppState.getPOIById(entityId);
+          } else {
+            details = AppState.getBeachById(entityId);
+          }
           EventBus.publish("map:showPopup", { feature, details, delay: action.delay });
         }
         break;

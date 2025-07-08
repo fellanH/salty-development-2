@@ -55,6 +55,46 @@ export const eventActionsConfig = {
       },
     ],
   },
+  selectPOIFromMap: {
+    description: "Action when a POI marker is clicked directly from the map.",
+    actions: [
+      { type: "UPDATE_APP_STATE" },
+      {
+        type: "FLY_TO",
+        zoomLevel: 16,
+        speed: 2,
+        when: { context: "isMobile" },
+      },
+      { type: "SHOW_POPUP", delay: 100 },
+      {
+        type: "SHOW_SIDEBAR",
+        sidebar: "detail",
+        when: { context: "isMobile" },
+      },
+    ],
+  },
+  selectPOIFromList: {
+    description: "Action when a POI is selected from a sidebar list.",
+    actions: [
+      { type: "UPDATE_APP_STATE" },
+      { type: "SHOW_SIDEBAR", sidebar: "detail" },
+      { type: "FLY_TO", zoomLevel: 16, speed: 2 },
+      { type: "SHOW_POPUP", delay: 100, when: { context: "isDesktop" } },
+    ],
+  },
+  selectPOIFromPopup: {
+    description: "Action when a POI popup is clicked.",
+    actions: [
+      { type: "UPDATE_APP_STATE" },
+      { type: "SHOW_SIDEBAR", sidebar: "detail" },
+      {
+        type: "FLY_TO",
+        zoomLevel: 16,
+        speed: 1.2,
+        when: { context: "isMobile" },
+      },
+    ],
+  },
 
   // Defines actions for static UI buttons
   navigateHome: {

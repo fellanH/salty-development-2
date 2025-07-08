@@ -71,7 +71,7 @@ export const UIController = {
    */
   setupBusSubscriptions() {
     EventBus.subscribe("state:selectionChanged", (selection) => {
-      if (selection?.type === "beach") {
+      if (selection?.type === "beach" || selection?.type === "poi") {
         DetailView.updateDetailSidebar();
       }
     });

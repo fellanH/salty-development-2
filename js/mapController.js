@@ -17,6 +17,7 @@ export const MapController = {
     HAWAII: "Hawaii",
     REGIONS: "salty-city",
     BEACHES: "salty-beaches",
+    POIS: "salty-pois", // POI layer from Mapbox Studio style
   },
   hoveredFeature: null,
 
@@ -101,6 +102,10 @@ export const MapController = {
         case this.LAYER_IDS.BEACHES:
           entityType = "beach";
           actionName = "selectBeachFromMap";
+          break;
+        case this.LAYER_IDS.POIS:
+          entityType = "poi";
+          actionName = "selectPOIFromMap";
           break;
         case this.LAYER_IDS.REGIONS:
           entityType = "region";
@@ -190,6 +195,18 @@ export const MapController = {
         `[MapController] Found ${beachFeatures.length} individual beaches in view.`
       );
       UIController.renderFeatureList(beachFeatures, "beach");
+      return;
+    }
+
+    // Query for POI features if no beaches found
+    const poiFeatures = map.queryRenderedFeatures({
+      layers: [this.LAYER_IDS.POIS],
+    });
+    if (poiFeatures.length > 0) {
+      console.log(
+        `[MapController] Found ${poiFeatures.length} POI features in view.`
+      );
+      UIController.renderFeatureList(poiFeatures, "poi");
       return;
     }
 
