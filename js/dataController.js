@@ -40,9 +40,18 @@ export const DataController = {
         const mockPOIData = [{
           id: "huntington-city-beach-lifeguard-tower-1",
           name: "Huntington City Beach Lifeguard Tower 1",
-          type: "Lifeguard Tower",
-          description: "Lifeguard station providing safety services at Huntington City Beach",
-          imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400"
+          slug: "huntington-lifeguard-tower-1",
+          longitude: -118.0052,
+          latitude: 33.6553,
+          categoryName: "Safety & Emergency",
+          customIconName: "lifeguard-tower",
+          mainImageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
+          mainImageAlt: "Huntington City Beach Lifeguard Tower 1",
+          richTextContent: "<p>Professional lifeguard station providing safety services and emergency response at Huntington City Beach.</p>",
+          geometry: {
+            type: 'Point',
+            coordinates: [-118.0052, 33.6553]
+          }
         }];
         AppState.dispatch({ type: "SET_ALL_POI_DATA", payload: mockPOIData });
         console.log("[DataController] Mock POI data cached.");
@@ -60,9 +69,18 @@ export const DataController = {
       const mockPOIData = [{
         id: "huntington-city-beach-lifeguard-tower-1",
         name: "Huntington City Beach Lifeguard Tower 1",
-        type: "Lifeguard Tower",
-        description: "Lifeguard station providing safety services at Huntington City Beach",
-        imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400"
+        slug: "huntington-lifeguard-tower-1",
+        longitude: -118.0052,
+        latitude: 33.6553,
+        categoryName: "Safety & Emergency",
+        customIconName: "lifeguard-tower",
+        mainImageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
+        mainImageAlt: "Huntington City Beach Lifeguard Tower 1",
+        richTextContent: "<p>Professional lifeguard station providing safety services and emergency response at Huntington City Beach.</p>",
+        geometry: {
+          type: 'Point',
+          coordinates: [-118.0052, 33.6553]
+        }
       }];
       AppState.dispatch({ type: "SET_ALL_POI_DATA", payload: mockPOIData });
       console.log("[DataController] Fallback to mock POI data due to error.");

@@ -43,16 +43,16 @@ export const DetailView = {
 
     let viewData;
     if (type === "poi") {
-      // POI-specific data mapping
+      // POI-specific data mapping using the new structured fields
       viewData = {
-        imageUrl: details.imageUrl || details["main-image"]?.url || "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
+        imageUrl: details.mainImageUrl || details["main-image"]?.url || "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
         name: details.name || details.Name || "Point of Interest",
         googleMapsUrl: details["google-maps-link"] || details.googleMapsUrl || "#",
         address: details.address || details["formatted-address"] || details["formatted-adress"] || "Address not available",
         websiteUrl: details.website || details["website-url"],
         websiteHost: (details.website || details["website-url"]) && (details.website || details["website-url"]).startsWith("http") ? new URL(details.website || details["website-url"]).hostname : "",
         phone: details.phone || "N/A",
-        // POI-specific fields
+        // POI-specific fields using the new structure
         restrooms: "N/A", // POIs don't typically have amenity details
         showers: "N/A",
         pets: "N/A",
@@ -64,7 +64,7 @@ export const DetailView = {
         pier: "N/A",
         picnic: "N/A",
         surfing: "N/A",
-        recreation: details.type || details.Type || "Point of Interest",
+        recreation: details.categoryName || details.category || details.type || "Point of Interest",
         // Weather data (POIs typically don't have weather data, so set to N/A)
         airTemp: "N/A",
         feelsLike: "N/A",
