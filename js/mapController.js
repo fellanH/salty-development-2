@@ -9,6 +9,7 @@ import { UIController } from "./uiController.js";
 import { EventBus } from "./eventBus.js";
 import { cityImageData } from "./cityImageData.js";
 import { ActionController } from "./actionController.js";
+import { MarkerManager } from "./markerManager.js";
 
 export const MapController = {
   LAYER_IDS: {
@@ -43,6 +44,8 @@ export const MapController = {
         AppState.dispatch({ type: "SET_MAP_INSTANCE", payload: map });
         this.setupEventHandlers();
         this.setupBusSubscriptions();
+        MarkerManager.init();
+        this.loadDynamicMarkers();
         console.log("✅ Map initialized with cloud-hosted data and styles.");
       });
 
@@ -175,6 +178,7 @@ export const MapController = {
           return;
         }
         await this.updateSidebarListFromMap();
+        this.updateDynamicMarkers();
       }, 250)
     );
   },
@@ -423,5 +427,89 @@ export const MapController = {
         speed,
       });
     }
+  },
+
+  /**
+   * Load dynamic markers for visible features
+   */
+  loadDynamicMarkers() {
+    console.log("[MapController] Loading dynamic category-based markers");
+    
+    // Load POI markers from cached data
+    const poiData = AppState.getState().cache.poiData;
+    if (poiData.size > 0) {
+      const poiFeatures = Array.from(poiData.values()).map(poi => ({
+        type: 'Feature',
+        properties: poi,
+        geometry: poi.geometry || {
+          type: 'Point',
+          coordinates: [poi.longitude, poi.latitude]
+        }
+      })).filter(f => f.geometry && f.geometry.coordinates);
+      
+      MarkerManager.addMarkersForFeatures(poiFeatures, 'poi');
+    }
+
+    // Load beach markers from cached data  
+    const beachData = AppState.getState().cache.beachData;
+    if (beachData.size > 0) {
+      const beachFeatures = Array.from(beachData.values()).map(beach => ({
+        type: 'Feature',
+        properties: beach,
+        geometry: beach.geometry || (beach.longitude && beach.latitude ? {
+          type: 'Point',
+          coordinates: [beach.longitude, beach.latitude]
+        } : null)
+      })).filter(f => f.geometry && f.geometry.coordinates);
+      
+      if (beachFeatures.length > 0) {
+        MarkerManager.addMarkersForFeatures(beachFeatures, 'beach');
+      }
+    }
+  },
+
+  /**
+   * Update dynamic markers based on current map view
+   */
+  updateDynamicMarkers() {
+    const map = AppState.getMap();
+    if (!map) return;
+
+    const zoom = map.getZoom();
+    
+    // Clear existing markers
+    MarkerManager.clearAllMarkers();
+    
+    // Only show dynamic markers at higher zoom levels to avoid clutter
+    if (zoom >= 10) {
+      this.loadDynamicMarkers();
+    }
+    
+    console.log(`[MapController] Updated dynamic markers at zoom level ${zoom.toFixed(1)}`);
+  },
+
+  /**
+   * Add a single dynamic marker for a feature
+   * @param {Object} feature - GeoJSON feature
+   * @param {string} type - Feature type ('beach' or 'poi')
+   */
+  addDynamicMarker(feature, type) {
+    MarkerManager.addMarkersForFeatures([feature], type);
+  },
+
+  /**
+   * Remove a specific dynamic marker
+   * @param {string} entityId - Entity ID to remove
+   */
+  removeDynamicMarker(entityId) {
+    MarkerManager.removeMarker(entityId);
+  },
+
+  /**
+   * Get statistics about current markers
+   * @returns {Object} Marker statistics
+   */
+  getMarkerStatistics() {
+    return MarkerManager.getMarkerStats();
   },
 };

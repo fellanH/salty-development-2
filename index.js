@@ -15,6 +15,7 @@ import { ActionController } from "./js/actionController.js";
 import { apiConfig } from "./js/config/api.js";
 import { ResponsiveService } from "./js/services/ResponsiveService.js";
 import { DataController } from "./js/dataController.js";
+import { IconManagerAdmin } from "./js/admin/iconManager.js";
 
 // =============================================================================
 // MAIN APPLICATION OBJECT
@@ -29,7 +30,9 @@ const App = {
       await MapController.init();
       ResponsiveService.init();
       await DataController.init();
+      IconManagerAdmin.init();
       console.log("✅ Application initialized successfully!");
+      console.log("🔧 Admin tools available via browser console (IconManagerAdmin)");
     } catch (error) {
       console.error("❌ Failed to initialize application:", error);
       const mapContainer = document.querySelector(

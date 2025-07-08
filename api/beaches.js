@@ -23,15 +23,19 @@ async function buildDynamicMaps() {
         amenityMap: new Map(),
         stateMap: new Map(),
         countryMap: new Map(),
+        categoryMap: new Map(),
     };
 
     fields.forEach(field => {
         if (field.type === 'Option' && field.validations?.options) {
             field.validations.options.forEach(option => {
-                // This assumes all 'Option' types are generic amenities.
-                // You might need more specific logic if you have multiple Option fields
-                // with different meanings, perhaps based on field.slug.
-                dynamicMaps.amenityMap.set(option.id, option.name);
+                // Map different option fields to their respective maps based on field slug
+                if (field.slug === 'category' || field.slug === 'beach-category') {
+                    dynamicMaps.categoryMap.set(option.id, option.name);
+                } else {
+                    // Generic amenity mapping for other option fields
+                    dynamicMaps.amenityMap.set(option.id, option.name);
+                }
             });
         }
         // NOTE: For 'Reference' fields, this approach is limited.
@@ -60,7 +64,7 @@ const parseFloatFromString = (str) => {
 };
 
 function transformBeaches(beaches, maps) {
-    const { amenityMap, stateMap, countryMap } = maps;
+    const { amenityMap, stateMap, countryMap, categoryMap } = maps;
     return beaches.map(item => {
         const transformedBeach = { id: item.id, ...item.fieldData };
 
@@ -82,6 +86,19 @@ function transformBeaches(beaches, maps) {
         }
         if (countryMap.has(transformedBeach.country)) {
             transformedBeach.countryName = countryMap.get(transformedBeach.country);
+        }
+        
+        // Transform category using dynamic mapping
+        if (transformedBeach.category && categoryMap.has(transformedBeach.category)) {
+            transformedBeach.categoryName = categoryMap.get(transformedBeach.category);
+        } else if (transformedBeach['beach-category'] && categoryMap.has(transformedBeach['beach-category'])) {
+            transformedBeach.categoryName = categoryMap.get(transformedBeach['beach-category']);
+        } else {
+            // Assign default category based on beach characteristics
+            transformedBeach.categoryName = transformedBeach.category || 
+                                          transformedBeach['beach-category'] || 
+                                          transformedBeach.type ||
+                                          'City Beach';
         }
         
         // Map and clean up weather data
