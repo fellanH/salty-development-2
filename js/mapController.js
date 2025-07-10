@@ -20,6 +20,7 @@ export const MapController = {
     POIS: "salty-pois", // POI layer from Mapbox Studio style
   },
   hoveredFeature: null,
+  hoverPopup: null, // Dedicated popup instance for hover functionality
 
   /**
    * Initialize the Mapbox map
@@ -90,7 +91,14 @@ export const MapController = {
       return;
     }
 
-    // Click handler for all interactive layers
+    // Initialize hover popup with appropriate settings
+    this.hoverPopup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: Config.UI.POPUP_OFFSET
+    });
+
+    // Click handler for all interactive layers (existing functionality)
     AppState.getMap().on("click", interactiveLayers, (e) => {
       if (!e.features || e.features.length === 0) {
         return;
@@ -122,6 +130,26 @@ export const MapController = {
       if (actionName) {
         ActionController.execute(actionName, { entityType, feature });
       }
+    });
+
+    // Hover event handlers for showing popups on mouseenter
+    AppState.getMap().on("mouseenter", interactiveLayers, (e) => {
+      if (!e.features || e.features.length === 0) {
+        return;
+      }
+      
+      const feature = e.features[0];
+      this.showHoverPopup(feature);
+    });
+
+    // Hide hover popup on mouseleave
+    AppState.getMap().on("mouseleave", interactiveLayers, () => {
+      this.hideHoverPopup();
+    });
+
+    // Close hover popup when clicking anywhere on the map
+    AppState.getMap().on("click", () => {
+      this.hideHoverPopup();
     });
 
     // Cursor and hover state handlers
@@ -380,11 +408,60 @@ export const MapController = {
   },
 
   /**
+   * Show hover popup for a feature
+   * @param {Object} feature - Feature to show hover popup for
+   */
+  showHoverPopup(feature) {
+    if (!this.hoverPopup) return;
+
+    const coordinates = feature.geometry.coordinates.slice();
+    const properties = feature.properties;
+
+    // Create a simplified popup content for hover
+    const imageUrl = properties["Main Image"];
+    const name = properties.Name;
+    const address = properties["Formatted Adress"];
+
+    const popupHTML = `
+      <div class="popup_component hover-popup" style="cursor: pointer; max-width: 250px;">
+        <img src="${
+          imageUrl ||
+          "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300"
+        }"
+             alt="${name}"
+             class="popup_image"
+             style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px;">
+        <h4 class="popup_title" style="margin: 8px 0 4px 0; font-size: 14px;">${name}</h4>
+        <p class="popup_address" style="margin: 0; color: #666; font-size: 12px;">${
+          address || "Address not available"
+        }</p>
+        <p style="margin: 4px 0 0 0; color: #999; font-size: 11px; font-style: italic;">Click for details</p>
+      </div>
+    `;
+
+    this.hoverPopup
+      .setLngLat(coordinates)
+      .setHTML(popupHTML)
+      .addTo(AppState.getMap());
+  },
+
+  /**
+   * Hide the hover popup
+   */
+  hideHoverPopup() {
+    if (this.hoverPopup) {
+      this.hoverPopup.remove();
+    }
+  },
+
+  /**
    * Closes all popups currently open on the map.
    */
   closeAllPopups() {
     AppState.getOpenPopups().forEach((popup) => popup.remove());
     AppState.dispatch({ type: "CLEAR_OPEN_POPUPS" });
+    // Also close the hover popup
+    this.hideHoverPopup();
   },
 
   /**
