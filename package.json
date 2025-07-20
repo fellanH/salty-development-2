@@ -5,7 +5,10 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev:local": "dotenv -e .env.local -- vercel dev"
+        "dev:local": "dotenv -e .env.local -- vercel dev",
+        "test": "node --test 'test/*.js'",
+        "test:watch": "node --test --watch 'test/*.js'",
+        "test:coverage": "node --test --experimental-test-coverage 'test/*.js'"
     },
     "dependencies": {
         "@turf/turf": "^7.2.0",
