@@ -66,9 +66,9 @@ const ActionController = {
 
       case "FLY_TO_DEFAULT_POSITION":
         const position = Utils.isMobileView()
-          ? Config.MAP.MOBILE_START_POSITION
-          : Config.MAP.DESKTOP_START_POSITION;
-        const zoom = Config.MAP.DEFAULT_ZOOM;
+          ? Config.MAP.mobileStartPosition
+          : Config.MAP.desktopStartPosition;
+        const zoom = Config.MAP.defaultZoomLevel;
         EventBus.publish("map:flyTo", { coordinates: position, zoom: zoom });
         break;
 
@@ -95,7 +95,7 @@ const ActionController = {
           } else {
             details = AppState.getBeachById(entityId);
           }
-          EventBus.publish("map:showPopup", { feature, details, delay: action.delay });
+          EventBus.publish("map:showPopup", { feature, details, delay: action.delayInMs });
         }
         break;
 

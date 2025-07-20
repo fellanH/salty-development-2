@@ -85,7 +85,7 @@ export const FeatureListView = {
     const listItem = clone.firstElementChild;
     const properties = feature.properties;
 
-    const entityId = Utils.getFeatureEntityId(feature);
+          const entityId = Utils.extractFeatureEntityId(feature);
 
     const visibleFeatures = AppState.getVisibleFeatures();
     const cachedFeature = visibleFeatures.get(String(entityId));

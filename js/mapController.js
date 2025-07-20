@@ -30,13 +30,13 @@ export const MapController = {
 
       // The map style now contains all data sources and layer styling
       const map = new mapboxgl.Map({
-        container: Config.SELECTORS.MAP_CONTAINER.slice(1),
+        container: Config.SELECTORS.mapContainer.slice(1),
         style: Config.MAP.STYLE, // This is your Mapbox Studio style URL
         center: Utils.isMobileView()
-          ? Config.MAP.MOBILE_START_POSITION
-          : Config.MAP.DESKTOP_START_POSITION,
-        zoom: Config.MAP.DEFAULT_ZOOM,
-        pitch: Config.MAP.START_PITCH,
+          ? Config.MAP.mobileStartPosition
+          : Config.MAP.desktopStartPosition,
+        zoom: Config.MAP.defaultZoomLevel,
+        pitch: Config.MAP.startPitchInDegrees,
       });
 
       map.on("load", () => {
@@ -47,14 +47,14 @@ export const MapController = {
       });
 
       const mapContainer = document.querySelector(
-        Config.SELECTORS.MAP_CONTAINER
+        Config.SELECTORS.mapContainer
       );
       const resizeObserver = new ResizeObserver(() => map.resize());
       resizeObserver.observe(mapContainer);
     } catch (error) {
       console.error("Failed to initialize map:", error);
-      Utils.showError(
-        document.querySelector(Config.SELECTORS.MAP_CONTAINER),
+      Utils.displayError(
+        document.querySelector(Config.SELECTORS.mapContainer),
         "Failed to load map. Please check your connection and try again."
       );
     }
@@ -69,7 +69,7 @@ export const MapController = {
       if (data && data.feature) {
         setTimeout(
           () => this.showPopup(data.feature, data.details),
-          data.delay || 0
+          data.delayInMs || 0
         );
       }
     });
@@ -164,7 +164,7 @@ export const MapController = {
     // Update sidebar on map move
     AppState.getMap().on(
       "moveend",
-      Utils.debounce(async () => {
+      Utils.createDebouncedFunction(async () => {
         console.log("🗺️ Map moveend event");
         const { ui } = AppState.getState();
         // Only update the list if the list view is actually visible
@@ -356,7 +356,7 @@ export const MapController = {
       </div>
     `;
 
-    const popup = new mapboxgl.Popup({ offset: Config.UI.POPUP_OFFSET })
+    const popup = new mapboxgl.Popup({ offset: Config.UI.popupOffsetInPixels })
       .setLngLat(coordinates)
       .setHTML(popupHTML2)
       .addTo(AppState.getMap());
@@ -392,12 +392,12 @@ export const MapController = {
    * @param {object} payload - The flyTo payload.
    * @param {Array} payload.coordinates - [lng, lat] coordinates
    * @param {number} payload.zoom - Target zoom level
-   * @param {number} [payload.speed=Config.UI.MAP_FLY_SPEED] - Animation speed
+   * @param {number} [payload.speed=Config.UI.mapFlySpeedMultiplier] - Animation speed
    */
   flyTo({
     coordinates,
-    zoom = Config.MAP.DETAIL_ZOOM,
-    speed = Config.UI.MAP_FLY_SPEED,
+    zoom = Config.MAP.detailZoomLevel,
+    speed = Config.UI.mapFlySpeedMultiplier,
   }) {
     const map = AppState.getMap();
     if (map) {

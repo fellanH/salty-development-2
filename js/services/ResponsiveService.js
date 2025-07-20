@@ -9,7 +9,7 @@ export const ResponsiveService = {
     
     window.addEventListener(
       "resize",
-      Utils.debounce(() => {
+      Utils.createDebouncedFunction(() => {
         this.updateLayout();
       }, 250)
     );

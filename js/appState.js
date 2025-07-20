@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { EventBus } from "./eventBus.js";
+import { Utils } from "./utils.js";
 
 // The single source of truth for the application state.
 let currentState = {
@@ -34,7 +35,7 @@ let currentState = {
  * @param {object} action - The action to perform.
  * @returns {object} The new state.
  */
-function appReducer(state, action) {
+function reduceAppState(state, action) {
   switch (action.type) {
     case "SET_MAP_INSTANCE":
       return { ...state, map: action.payload };
@@ -48,7 +49,15 @@ function appReducer(state, action) {
       ) {
         return state;
       }
-      return { ...state, currentSelection: action.payload };
+
+      return {
+        ...state,
+        currentSelection: {
+          id: action.payload.id,
+          type: action.payload.type,
+          feature: action.payload.feature,
+        },
+      };
 
     case "CLEAR_SELECTION":
       return {
@@ -57,13 +66,7 @@ function appReducer(state, action) {
       };
 
     case "SET_VISIBLE_FEATURES":
-      const newVisibleFeatures = new Map();
-      action.payload.forEach(feature => {
-        const entityId = feature.properties["Item ID"] || feature.properties.NAME || feature.properties.Name || feature.id;
-        if (entityId) {
-          newVisibleFeatures.set(String(entityId), feature);
-        }
-      });
+      const newVisibleFeatures = new Map(action.payload.map(feature => [Utils.extractFeatureEntityId(feature), feature]));
       return { ...state, cache: { ...state.cache, visibleFeatures: newVisibleFeatures } };
 
     case "CLEAR_VISIBLE_FEATURES":
@@ -71,7 +74,7 @@ function appReducer(state, action) {
 
     case "SET_UI_STATE":
       return { ...state, ui: { ...state.ui, ...action.payload } };
-    
+
     case "SET_WEATHER_DATA":
       const newWeatherData = new Map(state.cache.weatherData);
       newWeatherData.set(action.payload.id, action.payload.data);
@@ -82,24 +85,22 @@ function appReducer(state, action) {
       updatedWeatherData.delete(action.payload.id);
       return { ...state, cache: { ...state.cache, weatherData: updatedWeatherData } };
 
-    case "ADD_OPEN_POPUP":
+    case "ADD_POPUP":
       return { ...state, ui: { ...state.ui, openPopups: [...state.ui.openPopups, action.payload] } };
 
-    case "REMOVE_OPEN_POPUP":
-      return { ...state, ui: { ...state.ui, openPopups: state.ui.openPopups.filter(p => p !== action.payload) } };
-      
-    case "CLEAR_OPEN_POPUPS":
+    case "REMOVE_POPUP":
+      return { ...state, ui: { ...state.ui, openPopups: state.ui.openPopups.filter(popupInstance => popupInstance !== action.payload) } };
+
+    case "CLEAR_ALL_POPUPS":
       return { ...state, ui: { ...state.ui, openPopups: [] } };
 
     case "SET_ALL_BEACH_DATA":
-      const beachMap = new Map();
-      action.payload.forEach(beach => beachMap.set(beach.id, beach));
-      return { ...state, cache: { ...state.cache, beachData: beachMap } };
+      const beachDataMap = new Map(action.payload.map(beachItem => [beachItem["Item ID"] || beachItem.id, beachItem]));
+      return { ...state, cache: { ...state.cache, beachData: beachDataMap } };
 
     case "SET_ALL_POI_DATA":
-      const poiMap = new Map();
-      action.payload.forEach(poi => poiMap.set(poi.id, poi));
-      return { ...state, cache: { ...state.cache, poiData: poiMap } };
+      const poiDataMap = new Map(action.payload.map(poiItem => [poiItem.id || poiItem["Item ID"], poiItem]));
+      return { ...state, cache: { ...state.cache, poiData: poiDataMap } };
 
     default:
       return state;
@@ -114,7 +115,7 @@ export const AppState = {
    */
   dispatch(action) {
     const oldState = currentState;
-    currentState = appReducer(currentState, action);
+    currentState = reduceAppState(currentState, action);
     
     console.log(`[AppState] Action Dispatched: ${action.type}`, action.payload);
 

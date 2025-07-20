@@ -10,24 +10,24 @@ export const Utils = {
    * @returns {boolean} True if mobile view
    */
   isMobileView() {
-    return window.innerWidth <= Config.MAP.MOBILE_BREAKPOINT;
+    return window.innerWidth <= Config.MAP.mobileBreakpointInPixels;
   },
 
   /**
    * Debounce function calls
    * @param {Function} func - Function to debounce
-   * @param {number} wait - Wait time in milliseconds
+   * @param {number} waitTimeInMs - Wait time in milliseconds
    * @returns {Function} Debounced function
    */
-  debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
+  createDebouncedFunction(func, waitTimeInMs) {
+    let timeoutId;
+    return function executeAfterDelay(...args) {
+      const executeFunction = () => {
+        clearTimeout(timeoutId);
         func(...args);
       };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(executeFunction, waitTimeInMs);
     };
   },
 
@@ -35,7 +35,7 @@ export const Utils = {
    * Show loading state
    * @param {HTMLElement} element - Element to show loading in
    */
-  showLoading(element) {
+  displayLoading(element) {
     element.innerHTML =
       '<div class="loader" style="display: flex; justify-content: center; padding: 20px;">Loading...</div>';
   },
@@ -45,7 +45,7 @@ export const Utils = {
    * @param {HTMLElement} element - Element to show error in
    * @param {string} message - Error message
    */
-  showError(element, message) {
+  displayError(element, message) {
     element.innerHTML = `<div class="error" style="padding: 20px; text-align: center; color: #d32f2f;">${message}</div>`;
   },
 
@@ -54,12 +54,12 @@ export const Utils = {
    * @param {object} feature - The GeoJSON feature.
    * @returns {string|number|null} The unique ID of the feature.
    */
-  getFeatureEntityId(feature) {
+  extractFeatureEntityId(feature) {
     if (!feature) return null;
-    const p = feature.properties || {};
+    const properties = feature.properties || {};
     // Order is important. Check properties first, then the top-level feature ID as a fallback.
     return (
-      p["Item ID"] || p["Location Cluster"] || p.NAME || p.Name || feature.id
+      properties["Item ID"] || properties["Location Cluster"] || properties.NAME || properties.Name || feature.id
     );
   },
 
@@ -72,7 +72,7 @@ export const Utils = {
    * @param {string} [mapping.defaultValue='N/A'] - Fallback value.
    * @param {function(value): *} [mapping.transform] - A function to transform the value before setting.
    */
-  updateElement({
+  updateElementContent({
     element,
     value,
     type = "text",
@@ -99,35 +99,53 @@ export const Utils = {
         break;
       default:
         element.textContent = finalValue;
+        break;
     }
   },
 
   /**
-   * Populates elements in a container with data from an object.
-   * It looks for elements with a `data-bind` attribute and uses the attribute's
-   * value to look up the corresponding key in the data object.
-   * @param {HTMLElement} container - The parent element containing elements to populate.
+   * Binds data to an element based on its `data-bind` attribute.
+   * @param {HTMLElement} element - The element to bind data to.
    * @param {object} data - The data object.
    */
-  renderView(container, data) {
-    if (!container || !data) return;
-
-    container.querySelectorAll("[data-bind]").forEach((element) => {
-      const key = element.dataset.bind;
-      const value = data[key];
-
-      if (value !== undefined && value !== null) {
-        if (element.tagName === "A") {
-          element.href = value;
-        } else if (element.tagName === "IMG") {
-          element.src = value;
-        } else {
-          element.textContent = value;
-        }
-      } else {
-        // Optional: Hide element or set to default if data is missing
-        element.textContent = ""; // Or some placeholder
-      }
-    });
+  bindDataToElement(element, data) {
+    const key = element.dataset.bind;
+    const value = data[key];
+    if (value !== undefined) {
+      element.textContent = value;
+    }
   },
+
+  /**
+   * Helper to safely parse JSON with error handling
+   * @param {string} jsonString - JSON string to parse
+   * @returns {object|null} Parsed object or null if parsing fails
+   */
+  parseJsonSafely(jsonString) {
+    try {
+      return JSON.parse(jsonString);
+    } catch (error) {
+      console.warn('Failed to parse JSON:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Format duration from milliseconds to human readable format
+   * @param {number} durationInMs - Duration in milliseconds
+   * @returns {string} Formatted duration string
+   */
+  formatDuration(durationInMs) {
+    const seconds = Math.floor(durationInMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  }
 };

@@ -28,15 +28,15 @@ const App = {
       UIController.init();
       await MapController.init();
       ResponsiveService.init();
-      await DataController.init();
+      await DataController.initialize();
       console.log("✅ Application initialized successfully!");
     } catch (error) {
       console.error("❌ Failed to initialize application:", error);
       const mapContainer = document.querySelector(
-        Config.SELECTORS.MAP_CONTAINER
+        Config.SELECTORS.mapContainer
       );
       if (mapContainer) {
-        Utils.showError(
+        Utils.displayError(
           mapContainer,
           "Sorry, we couldn't load the map. Please refresh the page to try again."
         );
