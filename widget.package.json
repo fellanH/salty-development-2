@@ -1,0 +1,43 @@
+{
+  "name": "webflow-map-widget",
+  "version": "1.0.0",
+  "description": "Self-contained JavaScript widget for Webflow with Mapbox integration",
+  "main": "dist/widget.js",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:widget",
+    "build:widget": "rollup -c rollup.config.js",
+    "build:dev": "rollup -c rollup.config.js --watch",
+    "serve": "http-server dist -p 8080 --cors",
+    "dev": "npm run build:dev & npm run serve",
+    "test": "echo \"No tests specified\" && exit 0",
+    "clean": "rm -rf dist/*"
+  },
+  "files": [
+    "dist/"
+  ],
+  "keywords": [
+    "webflow",
+    "widget",
+    "mapbox",
+    "map",
+    "javascript",
+    "cms"
+  ],
+  "author": "Your Organization",
+  "license": "MIT",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.9.6",
+    "http-server": "^14.1.1"
+  },
+  "peerDependencies": {
+    "mapbox-gl": "^2.15.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}
