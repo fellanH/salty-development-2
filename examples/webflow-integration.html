@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webflow Map Widget Integration Example</title>
+    
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    
+    <!-- Widget Styles (would be in Webflow's CSS) -->
+    <style>
+        /* Widget Container */
+        #map-widget {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Map Container */
+        #map-container {
+            flex: 1;
+            height: 100%;
+            min-height: 400px;
+        }
+
+        /* Locations List Sidebar */
+        #locations-sidebar {
+            width: 350px;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* Filters */
+        .filters-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .clear-filters-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .clear-filters-btn:hover {
+            background: #5a6268;
+        }
+
+        /* Location Items */
+        #locations-list {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .location-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .location-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .location-item.active {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
+        .location-content {
+            padding: 15px;
+        }
+
+        .location-image {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .location-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .location-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .location-icon.beach {
+            background: #17a2b8;
+        }
+
+        .location-icon.poi {
+            background: #28a745;
+        }
+
+        .location-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            color: #212529;
+        }
+
+        .location-type {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin: 0 0 5px 0;
+        }
+
+        .location-city,
+        .location-region {
+            font-size: 14px;
+            color: #495057;
+            margin: 0 0 3px 0;
+        }
+
+        .location-actions {
+            margin-top: 10px;
+        }
+
+        .view-on-map-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .view-on-map-btn:hover {
+            background: #0056b3;
+        }
+
+        /* Map Markers */
+        .map-marker {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .map-marker:hover {
+            transform: scale(1.1);
+        }
+
+        .map-marker.highlighted {
+            z-index: 1000;
+            transform: scale(1.2);
+        }
+
+        .marker-default {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .marker-default.beach {
+            background: #17a2b8;
+        }
+
+        .marker-default.poi {
+            background: #28a745;
+        }
+
+        .marker-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Map Popup */
+        .map-popup {
+            max-width: 250px;
+        }
+
+        .map-popup h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #212529;
+        }
+
+        .popup-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .popup-details-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* Loading and Error States */
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .spinner-icon {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message,
+        .widget-error,
+        .map-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        .retry-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .no-locations {
+            text-align: center;
+            color: #6c757d;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #map-widget {
+                flex-direction: column;
+                height: auto;
+            }
+
+            #locations-sidebar {
+                width: 100%;
+                height: 300px;
+                order: 2;
+            }
+
+            #map-container {
+                height: 400px;
+                order: 1;
+            }
+        }
+
+        /* Hide elements based on state */
+        [data-show-when="loading"] {
+            display: none;
+        }
+
+        [data-show-when="error"] {
+            display: none;
+        }
+
+        [data-show-when="loaded"] {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Widget Container -->
+    <div id="map-widget" data-widget="map-widget" data-mapbox-token="YOUR_MAPBOX_TOKEN_HERE">
+        
+        <!-- Locations Sidebar -->
+        <div id="locations-sidebar">
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <h3>Filters</h3>
+                
+                <div class="filter-group">
+                    <label for="search-input">Search:</label>
+                    <input type="text" id="search-input" placeholder="Search locations...">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="type-filter">Type:</label>
+                    <select id="type-filter">
+                        <option value="all">All Types</option>
+                        <option value="Beach">Beaches</option>
+                        <option value="POI">Points of Interest</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="region-filter">Region:</label>
+                    <select id="region-filter">
+                        <option value="all">All Regions</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="city-filter">City:</label>
+                    <select id="city-filter">
+                        <option value="all">All Cities</option>
+                    </select>
+                </div>
+                
+                <button id="clear-filters" class="clear-filters-btn">Clear Filters</button>
+            </div>
+            
+            <!-- Locations List -->
+            <div id="locations-list">
+                <!-- Location items will be populated here -->
+            </div>
+        </div>
+        
+        <!-- Map Container -->
+        <div id="map-container">
+            <!-- Mapbox map will be initialized here -->
+        </div>
+    </div>
+
+    <!-- Hidden Templates -->
+    <div id="widget-templates" style="display: none;">
+        <!-- Popup Template -->
+        <div class="popup" data-template="popup">
+            <h3 data-element="name">Location Name</h3>
+            <p class="location-type" data-element="type">Type</p>
+            <p class="location-city" data-element="city">City</p>
+            <button class="popup-details-btn" data-location-id="">View Details</button>
+        </div>
+        
+        <!-- Location List Item Template -->
+        <div class="location-item" data-template="location-item">
+            <div class="location-content">
+                <div class="location-image" data-element="image-container">
+                    <img data-element="image" alt="" loading="lazy">
+                </div>
+                <h3 class="location-name" data-element="name">Location Name</h3>
+                <p class="location-type" data-element="type">Type</p>
+                <p class="location-city" data-element="city">City</p>
+                <p class="location-region" data-element="region">Region</p>
+                <div class="location-actions">
+                    <button class="view-on-map-btn" data-action="view-on-map">View on Map</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget Script -->
+    <script src="https://your-project-name.vercel.app/widget.js" defer></script>
+    
+    <!-- Optional: Manual initialization script -->
+    <script>
+        // Example of manual initialization with custom configuration
+        document.addEventListener('DOMContentLoaded', function() {
+            // The widget will auto-initialize, but you can also initialize manually:
+            /*
+            const widget = new MapWidget();
+            widget.init({
+                mapboxToken: 'YOUR_MAPBOX_TOKEN_HERE',
+                containerId: 'map-widget',
+                mapContainerId: 'map-container',
+                locationsListId: 'locations-list'
+            });
+            */
+        });
+
+        // Listen for widget events
+        window.addEventListener('mapWidgetInitialized', function(event) {
+            console.log('Widget initialized:', event.detail.widget);
+        });
+
+        window.addEventListener('mapStateChange', function(event) {
+            console.log('State changed:', event.detail);
+        });
+
+        window.addEventListener('locationSelected', function(event) {
+            console.log('Location selected:', event.detail.location);
+        });
+    </script>
+</body>
+</html>
