@@ -313,9 +313,8 @@ export const MapController = {
       ? details["button-link"]
       : properties["Button Link"];
 
-    const showButton = details ? details.showButton : properties.showButton;
+    const showButton = details ? details.button : properties.button;
     const buttonText = details ? details.buttonText : properties.buttonText;
-    const newButtonLink = details ? details.buttonLink : properties.buttonLink;
 
     const popupHTML = `
       <div class="popup_component" style="cursor: pointer;">
@@ -366,9 +365,9 @@ export const MapController = {
        <div class="spacer-xsmall"></div>
        ${
          entityType !== "poi"
-           ? `<div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140));">See Details</div>`
+           ? `<div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140);">See Details</div>`
            : showButton
-           ? `<a href="${newButtonLink}" target="_blank" class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140); text-decoration: none;">${buttonText}</a>`
+           ? `<a href="${buttonLink}" target="_blank" class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140); text-decoration: none;">${buttonText}</a>`
            : ""
        }
       </div>

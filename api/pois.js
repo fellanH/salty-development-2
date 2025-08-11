@@ -108,7 +108,7 @@ function transformPOIs(pois, maps) {
       transformedPOI["rich-text"] || transformedPOI.description || "";
 
     // Handle button fields
-    transformedPOI.showButton = transformedPOI["button"] === true;
+    transformedPOI.button = transformedPOI["button"] === true;
     transformedPOI.buttonText = transformedPOI["button-text"] || "Learn More";
     transformedPOI.buttonLink = transformedPOI["button-link"] || "#";
 
