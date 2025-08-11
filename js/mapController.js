@@ -313,6 +313,10 @@ export const MapController = {
       ? details["button-link"]
       : properties["Button Link"];
 
+    const showButton = details ? details.showButton : properties.showButton;
+    const buttonText = details ? details.buttonText : properties.buttonText;
+    const newButtonLink = details ? details.buttonLink : properties.buttonLink;
+
     const popupHTML = `
       <div class="popup_component" style="cursor: pointer;">
         <img src="${
@@ -363,7 +367,9 @@ export const MapController = {
        ${
          entityType !== "poi"
            ? `<div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140));">See Details</div>`
-           : `<div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140));">Poi</div>`
+           : showButton
+           ? `<a href="${newButtonLink}" target="_blank" class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140); text-decoration: none;">${buttonText}</a>`
+           : ""
        }
       </div>
     `;
@@ -382,7 +388,11 @@ export const MapController = {
 
     // Add click listener to the popup to open the detail view
     const popupEl = popup.getElement();
-    popupEl.addEventListener("click", () => {
+    popupEl.addEventListener("click", (e) => {
+      // Prevent the detail view from opening if a link within the popup is clicked
+      if (e.target.tagName === "A" || e.target.closest("a")) {
+        return;
+      }
       if (entityType !== "poi") {
         ActionController.execute("selectBeachFromPopup", {
           entityType: "beach",
