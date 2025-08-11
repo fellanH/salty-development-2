@@ -297,6 +297,9 @@ export const MapController = {
       ? details["main-image"]?.url
       : properties["Main Image"];
     const name = details ? details.name : properties.Name;
+    const richTextContent = details
+      ? details.richTextContent
+      : properties.richTextContent;
     const address = details
       ? details["adress"]
       : properties["Formatted Adress"];
@@ -336,6 +339,11 @@ export const MapController = {
         <div class="spacer-tiny"></div>
        <h4 class="popup_title">${name}</h4>
         <div class="spacer-xxsmall"></div>
+        ${
+          richTextContent
+            ? `<div class="popup_description">${richTextContent}</div>`
+            : ""
+        }
        ${address ? `<p class="popup_address">${address}</p>` : ""}
        ${hours ? `<p class="popup_hours">Hours: ${hours}</p>` : ""}
        ${
