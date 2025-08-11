@@ -68,7 +68,7 @@ export const MapController = {
     EventBus.subscribe("map:showPopup", (data) => {
       if (data && data.feature) {
         setTimeout(
-          () => this.showPopup(data.feature, data.details),
+          () => this.showPopup(data.feature, data.details, data.entityType),
           data.delay || 0
         );
       }
@@ -289,7 +289,7 @@ export const MapController = {
    * @param {Object} feature - Feature to show popup for
    * @param {Object} [details] - The full details object from the cache
    */
-  showPopup(feature, details) {
+  showPopup(feature, details, entityType) {
     const coordinates = feature.geometry.coordinates.slice();
     const properties = details || feature.properties; // Use cached details if available
 
@@ -360,7 +360,11 @@ export const MapController = {
            : ""
        }
        <div class="spacer-xsmall"></div>
-       <div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140));">See Details</div>
+       ${
+         entityType !== "poi"
+           ? `<div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140));">See Details</div>`
+           : `<div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140));">Poi</div>`
+       }
       </div>
     `;
 
@@ -379,11 +383,13 @@ export const MapController = {
     // Add click listener to the popup to open the detail view
     const popupEl = popup.getElement();
     popupEl.addEventListener("click", () => {
-      ActionController.execute("selectBeachFromPopup", {
-        entityType: "beach",
-        feature: feature,
-      });
-      popup.remove();
+      if (entityType !== "poi") {
+        ActionController.execute("selectBeachFromPopup", {
+          entityType: "beach",
+          feature: feature,
+        });
+        popup.remove();
+      }
     });
   },
 

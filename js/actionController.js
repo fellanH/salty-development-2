@@ -12,19 +12,25 @@ const ActionController = {
   execute(actionName, context = {}) {
     const actionConfig = Config.EVENT_ACTIONS[actionName];
     if (!actionConfig) {
-      console.warn(`[ActionController] No action configured for '${actionName}'.`);
+      console.warn(
+        `[ActionController] No action configured for '${actionName}'.`
+      );
       return;
     }
 
     if (!context.feature && context.target) {
       const { entityType, featureId } = context.target.dataset;
       if (entityType && featureId) {
-        context.feature = AppState.getState().cache.visibleFeatures.get(featureId);
+        context.feature =
+          AppState.getState().cache.visibleFeatures.get(featureId);
         context.entityType = entityType;
       }
     }
 
-    console.log(`[ActionController] Executing action: '${actionName}'`, context);
+    console.log(
+      `[ActionController] Executing action: '${actionName}'`,
+      context
+    );
 
     actionConfig.actions.forEach((action) => {
       if (action.when) {
@@ -74,7 +80,7 @@ const ActionController = {
 
       case "UPDATE_APP_STATE":
         if (feature && entityType) {
-          const entityId = feature.properties['Item ID'] || feature.id;
+          const entityId = feature.properties["Item ID"] || feature.id;
           AppState.dispatch({
             type: "SET_SELECTION",
             payload: { type: entityType, id: entityId, feature },
@@ -88,14 +94,19 @@ const ActionController = {
 
       case "SHOW_POPUP":
         if (feature) {
-          const entityId = feature.properties['Item ID'] || feature.id;
+          const entityId = feature.properties["Item ID"] || feature.id;
           let details;
           if (entityType === "poi") {
             details = AppState.getPOIById(entityId);
           } else {
             details = AppState.getBeachById(entityId);
           }
-          EventBus.publish("map:showPopup", { feature, details, delay: action.delay });
+          EventBus.publish("map:showPopup", {
+            feature,
+            details,
+            delay: action.delay,
+            entityType,
+          });
         }
         break;
 
@@ -115,9 +126,11 @@ const ActionController = {
         break;
 
       default:
-        console.warn(`[ActionController] Unknown action type: '${action.type}'`);
+        console.warn(
+          `[ActionController] Unknown action type: '${action.type}'`
+        );
     }
   },
 };
 
-export { ActionController }; 
+export { ActionController };
