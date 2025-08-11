@@ -108,9 +108,9 @@ function transformPOIs(pois, maps) {
       transformedPOI["rich-text"] || transformedPOI.description || "";
 
     // Handle button fields
-    transformedPOI.showButton = transformedPOI["button-show"] === true; // Assuming 'button-show' is the slug for "Button"
-    transformedPOI.buttonText = transformedPOI["button-text"] || "Learn More"; // Assuming 'button-text' is the slug
-    transformedPOI.buttonLink = transformedPOI["button-link"] || "#"; // Assuming 'button-link' is the slug
+    transformedPOI.showButton = transformedPOI["button"] === true;
+    transformedPOI.buttonText = transformedPOI["button-text"] || "Learn More";
+    transformedPOI.buttonLink = transformedPOI["button-link"] || "#";
 
     // Create geometry for GeoJSON compatibility (if coordinates exist)
     if (transformedPOI.longitude && transformedPOI.latitude) {
