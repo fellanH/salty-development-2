@@ -20,6 +20,8 @@ export const MapController = {
     POIS: "salty-pois", // POI layer from Mapbox Studio style
   },
   hoveredFeature: null,
+  hoverPopup: null,
+  hoverTimeout: null,
 
   /**
    * Initialize the Mapbox map
@@ -147,11 +149,53 @@ export const MapController = {
           AppState.getMap().setFeatureState(this.hoveredFeature, {
             state: true,
           });
+          // New hover popup logic for desktop
+          if (!Utils.isMobileView()) {
+            // Clear any existing hover timeout
+            clearTimeout(this.hoverTimeout);
+            this.hoverTimeout = setTimeout(() => {
+              if (this.hoverPopup) {
+                this.hoverPopup.remove();
+              }
+              const feature = this.hoveredFeature;
+              let entityType;
+              switch (feature.layer.id) {
+                case this.LAYER_IDS.BEACHES:
+                  entityType = "beach";
+                  break;
+                case this.LAYER_IDS.POIS:
+                  entityType = "poi";
+                  break;
+                default:
+                  return; // Don't show popups for regions or states on hover
+              }
+
+              const entityId = feature.properties["Item ID"] || feature.id;
+              const details =
+                entityType === "poi"
+                  ? AppState.getPOIById(entityId)
+                  : AppState.getBeachById(entityId);
+
+              this.hoverPopup = this.showPopup(
+                feature,
+                details,
+                entityType,
+                true
+              ); // true for isHoverPopup
+            }, Config.UI.HOVER_POPUP_DELAY); // ~300ms delay
+          }
         }
       }
     });
 
     AppState.getMap().on("mouseleave", interactiveLayers, () => {
+      // Clear any existing hover timeout
+      clearTimeout(this.hoverTimeout);
+
+      if (this.hoverPopup) {
+        this.hoverPopup.remove();
+        this.hoverPopup = null;
+      }
       if (this.hoveredFeature) {
         AppState.getMap().setFeatureState(this.hoveredFeature, {
           state: false,
@@ -289,7 +333,7 @@ export const MapController = {
    * @param {Object} feature - Feature to show popup for
    * @param {Object} [details] - The full details object from the cache
    */
-  showPopup(feature, details, entityType) {
+  showPopup(feature, details, entityType, isHoverPopup = false) {
     const coordinates = feature.geometry.coordinates.slice();
     const properties = details || feature.properties; // Use cached details if available
 
@@ -378,28 +422,31 @@ export const MapController = {
       .setHTML(popupHTML2)
       .addTo(AppState.getMap());
 
-    // Track the popup
-    AppState.dispatch({ type: "ADD_OPEN_POPUP", payload: popup });
-    popup.on("close", () => {
-      // Remove popup from the tracking array when it's closed
-      AppState.dispatch({ type: "REMOVE_OPEN_POPUP", payload: popup });
-    });
+    if (!isHoverPopup) {
+      // Track the popup
+      AppState.dispatch({ type: "ADD_OPEN_POPUP", payload: popup });
+      popup.on("close", () => {
+        // Remove popup from the tracking array when it's closed
+        AppState.dispatch({ type: "REMOVE_OPEN_POPUP", payload: popup });
+      });
 
-    // Add click listener to the popup to open the detail view
-    const popupEl = popup.getElement();
-    popupEl.addEventListener("click", (e) => {
-      // Prevent the detail view from opening if a link within the popup is clicked
-      if (e.target.tagName === "A" || e.target.closest("a")) {
-        return;
-      }
-      if (entityType !== "poi") {
-        ActionController.execute("selectBeachFromPopup", {
-          entityType: "beach",
-          feature: feature,
-        });
-        popup.remove();
-      }
-    });
+      // Add click listener to the popup to open the detail view
+      const popupEl = popup.getElement();
+      popupEl.addEventListener("click", (e) => {
+        // Prevent the detail view from opening if a link within the popup is clicked
+        if (e.target.tagName === "A" || e.target.closest("a")) {
+          return;
+        }
+        if (entityType !== "poi") {
+          ActionController.execute("selectBeachFromPopup", {
+            entityType: "beach",
+            feature: feature,
+          });
+          popup.remove();
+        }
+      });
+    }
+    return popup;
   },
 
   /**
