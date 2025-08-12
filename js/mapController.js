@@ -69,7 +69,7 @@ export const MapController = {
     EventBus.subscribe("map:showPopup", (data) => {
       if (data && data.feature) {
         setTimeout(
-          () => this.showPopup(data.feature, data.details),
+          () => this.showPopup(data.feature, data.details, data.entityType),
           data.delay || 0
         );
       }
@@ -317,7 +317,7 @@ export const MapController = {
    * @param {Object} feature - Feature to show popup for
    * @param {Object} [details] - The full details object from the cache
    */
-  showPopup(feature, details) {
+  showPopup(feature, details, entityType) {
     const coordinates = feature.geometry.coordinates.slice();
     const properties = details || feature.properties; // Use cached details if available
 
@@ -325,6 +325,9 @@ export const MapController = {
       ? details["main-image"]?.url
       : properties["Main Image"];
     const name = details ? details.name : properties.Name;
+    const richTextContent = details
+      ? details.richTextContent
+      : properties.richTextContent;
     const address = details
       ? details["adress"]
       : properties["Formatted Adress"];
@@ -337,6 +340,9 @@ export const MapController = {
     const buttonLink = details
       ? details["button-link"]
       : properties["Button Link"];
+
+    const showButton = details ? details.button : properties.button;
+    const buttonText = details ? details.buttonText : properties.buttonText;
 
     const popupHTML = `
       <div class="popup_component" style="cursor: pointer;">
@@ -364,6 +370,11 @@ export const MapController = {
         <div class="spacer-tiny"></div>
        <h4 class="popup_title">${name}</h4>
         <div class="spacer-xxsmall"></div>
+        ${
+          richTextContent
+            ? `<div class="popup_description">${richTextContent}</div>`
+            : ""
+        }
        ${address ? `<p class="popup_address">${address}</p>` : ""}
        ${hours ? `<p class="popup_hours">Hours: ${hours}</p>` : ""}
        ${
@@ -380,7 +391,13 @@ export const MapController = {
            : ""
        }
        <div class="spacer-xsmall"></div>
-       <div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140));">See Details</div>
+       ${
+         entityType !== "poi"
+           ? `<div class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140);">See Details</div>`
+           : showButton
+           ? `<a href="${buttonLink}" target="_blank" class="button is-icon w-inline-block" style="background-color: rgb(0, 116, 140); text-decoration: none;">${buttonText}</a>`
+           : ""
+       }
       </div>
     `;
 
@@ -398,12 +415,18 @@ export const MapController = {
 
     // Add click listener to the popup to open the detail view
     const popupEl = popup.getElement();
-    popupEl.addEventListener("click", () => {
-      ActionController.execute("selectBeachFromPopup", {
-        entityType: "beach",
-        feature: feature,
-      });
-      popup.remove();
+    popupEl.addEventListener("click", (e) => {
+      // Prevent the detail view from opening if a link within the popup is clicked
+      if (e.target.tagName === "A" || e.target.closest("a")) {
+        return;
+      }
+      if (entityType !== "poi") {
+        ActionController.execute("selectBeachFromPopup", {
+          entityType: "beach",
+          feature: feature,
+        });
+        popup.remove();
+      }
     });
   },
 
